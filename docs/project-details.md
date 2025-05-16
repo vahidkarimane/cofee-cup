@@ -14,18 +14,18 @@ Great! Here's a detailed breakdown of both the **API Specification** and the **N
 
 **Headers**:
 
-* `Authorization: Bearer <Clerk JWT token>`
-* `Content-Type: multipart/form-data`
+- `Authorization: Bearer <Clerk JWT token>`
+- `Content-Type: multipart/form-data`
 
 **Body**:
 
 ```ts
 {
-  name: string;
-  age: number;
-  intent: string;
-  email: string;
-  image: File; // coffee cup photo (jpg/png)
+	name: string;
+	age: number;
+	intent: string;
+	email: string;
+	image: File; // coffee cup photo (jpg/png)
 }
 ```
 
@@ -39,16 +39,17 @@ Great! Here's a detailed breakdown of both the **API Specification** and the **N
 4. **Prepare Prompt**:
 
 ```txt
-Act as an experienced Tasseography Fortune Teller. 
+Act as an experienced Tasseography Fortune Teller.
 The user is named {name}, age {age}, with the intent: "{intent}".
-Here is their coffee cup image. 
+Here is their coffee cup image.
 Please provide a meaningful and detailed fortune based on the symbols and texture in the cup.
 ```
 
 5. **Call AWS Bedrock** (Claude 3.7 Multimodal) with:
 
-   * `text` = prompt above
-   * `image` = uploaded photo
+   - `text` = prompt above
+   - `image` = uploaded photo
+
 6. **Save**: Store user info + fortune result in Firebase (`fortunes` collection)
 7. **Send Email** (optional: Resend/SendGrid)
 8. **Return Response**
@@ -59,9 +60,9 @@ Please provide a meaningful and detailed fortune based on the symbols and textur
 
 ```json
 {
-  "status": "success",
-  "fortune": "You are about to enter a new phase in your life...",
-  "timestamp": "2025-05-16T10:00:00Z"
+	"status": "success",
+	"fortune": "You are about to enter a new phase in your life...",
+	"timestamp": "2025-05-16T10:00:00Z"
 }
 ```
 

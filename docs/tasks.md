@@ -6,67 +6,67 @@ This document outlines the sequential tasks required to build the Coffee Cup For
 
 - [x] Initialize Next.js project with TypeScript
 - [x] Configure Tailwind CSS
-- [ ] Set up ShadCN UI components
-- [ ] Create project directory structure
-- [ ] Configure ESLint and Prettier
-- [ ] Set up environment variables (.env.local)
+- [x] Set up ShadCN UI components
+- [x] Create project directory structure
+- [x] Configure ESLint and Prettier
+- [x] Set up environment variables (.env.local)
 
 ## Authentication & User Management
 
-- [ ] Set up Clerk authentication
-- [ ] Configure Clerk middleware
-- [ ] Create login/signup components
-- [ ] Implement protected routes
+- [x] Set up Clerk authentication
+- [x] Configure Clerk middleware
+- [x] Create login/signup components
+- [x] Implement protected routes
 
 ## Firebase Integration
 
-- [ ] Initialize Firebase project
-- [ ] Set up Firebase SDK in the application
-- [ ] Create Firestore database structure
-- [ ] Configure Firebase Storage for images
-- [ ] Create utility functions for Firebase operations
+- [x] Initialize Firebase project
+- [x] Set up Firebase SDK in the application
+- [x] Create Firestore database structure
+- [x] Configure Firebase Storage for images
+- [x] Create utility functions for Firebase operations
 
 ## UI Components
 
-- [ ] Design and implement navbar component
-- [ ] Create landing page with app description
-- [ ] Build "How It Works" section/modal
-- [ ] Design form layout with responsive styling
-- [ ] Implement form validation with react-hook-form and zod
-- [ ] Create image upload component with preview
-- [ ] Build fortune result display component
+- [x] Design and implement navbar component
+- [x] Create landing page with app description
+- [x] Build "How It Works" section/modal
+- [x] Design form layout with responsive styling
+- [x] Implement form validation with react-hook-form and zod
+- [x] Create image upload component with preview
+- [x] Build fortune result display component
 
 ## Stripe Payment Integration
 
-- [ ] Set up Stripe account and API keys
-- [ ] Create Stripe payment intent API endpoint
-- [ ] Implement Stripe Elements for payment form
-- [ ] Build payment confirmation UI
-- [ ] Handle payment success/failure flows
+- [x] Set up Stripe account and API keys
+- [x] Create Stripe payment intent API endpoint
+- [x] Implement Stripe Elements for payment form
+- [x] Build payment confirmation UI
+- [x] Handle payment success/failure flows
 
 ## AWS Bedrock Integration
 
-- [ ] Set up AWS account and credentials
-- [ ] Configure AWS SDK for Bedrock
-- [ ] Create utility functions for Claude 3.7 Sonnet API calls
-- [ ] Build image processing pipeline
-- [ ] Implement prompt engineering for tasseography
+- [x] Set up AWS account and credentials
+- [x] Configure AWS SDK for Bedrock
+- [x] Create utility functions for Claude 3.7 Sonnet API calls
+- [x] Build image processing pipeline
+- [x] Implement prompt engineering for tasseography
 
 ## API Routes
 
-- [ ] Create fortune submission API endpoint
-- [ ] Implement input validation
-- [ ] Build file upload handling
-- [ ] Set up payment processing flow
-- [ ] Integrate AWS Bedrock API calls
-- [ ] Implement Firebase data storage
-- [ ] Add error handling and logging
+- [x] Create fortune submission API endpoint
+- [x] Implement input validation
+- [x] Build file upload handling
+- [x] Set up payment processing flow
+- [x] Integrate AWS Bedrock API calls
+- [x] Implement Firebase data storage
+- [x] Add error handling and logging
 
 ## Email Integration
 
-- [ ] Set up email service (Resend or SendGrid)
-- [ ] Create email templates for fortune results
-- [ ] Implement email sending functionality
+- [x] Set up email service (Resend or SendGrid)
+- [x] Create email templates for fortune results
+- [x] Implement email sending functionality
 - [ ] Add email verification (optional)
 
 ## Testing
