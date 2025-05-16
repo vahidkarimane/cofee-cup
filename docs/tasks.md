@@ -4,8 +4,8 @@ This document outlines the sequential tasks required to build the Coffee Cup For
 
 ## Project Setup
 
-- [ ] Initialize Next.js project with TypeScript in the same folder as tasks.md file
-- [ ] Configure Tailwind CSS
+- [x] Initialize Next.js project with TypeScript
+- [x] Configure Tailwind CSS
 - [ ] Set up ShadCN UI components
 - [ ] Create project directory structure
 - [ ] Configure ESLint and Prettier
