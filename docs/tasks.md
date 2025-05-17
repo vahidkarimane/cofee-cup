@@ -67,30 +67,108 @@ This document outlines the sequential tasks required to build the Coffee Cup For
 - [x] Set up email service (Resend or SendGrid)
 - [x] Create email templates for fortune results
 - [x] Implement email sending functionality
-- [ ] Add email verification (optional)
+
+### Email Verification (Optional)
+- [ ] Design verification email template
+- [ ] Create verification token generation system
+- [ ] Implement email verification API endpoint
+- [ ] Add verification status to user profile
+- [ ] Create UI for resending verification emails
+- [ ] Implement verification success/error pages
+- [ ] Add verification checks to protected actions
 
 ## Testing
 
-- [ ] Write unit tests for utility functions
-- [ ] Create integration tests for API endpoints
-- [ ] Perform end-to-end testing of user flows
-- [ ] Test payment processing
-- [ ] Test image upload and processing
-- [ ] Verify email delivery
+- [x] Write unit tests for utility functions
+- [x] Create integration tests for API endpoints
+- [x] Test payment processing
+- [x] Test image upload and processing
+- [x] Verify email delivery
+
+### End-to-End Testing
+- [ ] Set up Cypress or Playwright testing framework
+- [ ] Create test for user registration flow
+- [ ] Create test for user login flow
+- [ ] Create test for fortune submission flow
+- [ ] Create test for payment processing flow
+- [ ] Create test for viewing past fortunes
+- [ ] Test error handling and edge cases
+- [ ] Set up CI integration for E2E tests
 
 ## Deployment & CI/CD
 
-- [ ] Set up Vercel project
-- [ ] Configure build settings
-- [ ] Set up environment variables in Vercel
-- [ ] Create deployment pipeline
-- [ ] Configure domain and SSL
+### Vercel Setup
+- [ ] Create Vercel account (if needed)
+- [ ] Connect GitHub repository to Vercel
+- [ ] Configure project settings in Vercel dashboard
+- [ ] Set up preview deployments for pull requests
+
+### Environment Configuration
+- [ ] Transfer all environment variables to Vercel
+- [ ] Set up production vs. development environments
+- [ ] Configure secrets management
+- [ ] Test environment variable access in deployed app
+
+### Build Optimization
+- [ ] Configure build cache settings
+- [ ] Optimize Next.js build configuration
+- [ ] Set up build notifications
+- [ ] Implement bundle analysis to identify optimization opportunities
+
+### CI/CD Pipeline
+- [ ] Configure GitHub Actions for automated testing
+- [ ] Set up linting and type checking in CI pipeline
+- [ ] Implement automated deployment on merge to main
+- [ ] Create staging environment for pre-production testing
+
+### Domain & SSL
+- [ ] Purchase domain name (if needed)
+- [ ] Configure DNS settings
+- [ ] Set up custom domain in Vercel
+- [ ] Verify SSL certificate installation
+- [ ] Implement redirects (www to non-www or vice versa)
 
 ## Final Polishing
 
-- [ ] Implement loading states and animations
-- [ ] Add error handling for edge cases
-- [ ] Optimize images and assets
-- [ ] Perform accessibility audit and fixes
-- [ ] Test cross-browser compatibility
-- [ ] Implement analytics (basic)
+### Loading States and Animations
+- [ ] Add loading spinners to form submissions
+- [ ] Implement skeleton loaders for fortune results
+- [ ] Create smooth transitions between pages
+- [ ] Add progress indicators for image uploads
+- [ ] Implement animated success/error states
+
+### Error Handling
+- [ ] Create user-friendly error messages
+- [ ] Implement retry mechanisms for API failures
+- [ ] Add fallback UI for component errors
+- [ ] Handle network connectivity issues gracefully
+- [ ] Implement error boundaries for React components
+
+### Asset Optimization
+- [ ] Compress and optimize all images
+- [ ] Implement lazy loading for images
+- [ ] Set up proper caching headers
+- [ ] Optimize font loading and display
+- [ ] Minify CSS and JavaScript assets
+
+### Accessibility
+- [ ] Perform automated accessibility audit (Lighthouse/axe)
+- [ ] Ensure proper heading hierarchy
+- [ ] Add ARIA attributes where needed
+- [ ] Verify keyboard navigation works properly
+- [ ] Ensure sufficient color contrast
+- [ ] Test with screen readers
+
+### Cross-Browser Testing
+- [ ] Test on Chrome, Firefox, Safari, and Edge
+- [ ] Verify mobile responsiveness on iOS and Android
+- [ ] Fix any browser-specific CSS issues
+- [ ] Ensure consistent font rendering
+- [ ] Test payment flow across browsers
+
+### Analytics
+- [ ] Set up Google Analytics or similar service
+- [ ] Track page views and user journeys
+- [ ] Implement event tracking for key actions
+- [ ] Create custom conversion funnels
+- [ ] Set up basic reporting dashboard
