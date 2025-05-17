@@ -462,7 +462,7 @@ export default function Home() {
 									))}
 								</div>
 								<p className="mb-4 italic text-muted-foreground">
-									"I use Coffee Cup Fortune monthly and it's become a fun ritual. The readings are
+									"I use Coffee Cup Fortune monthly and its become a fun ritual. The readings are
 									always thought-provoking and give me a new perspective on things."
 								</p>
 								<div className="flex items-center">
@@ -543,14 +543,14 @@ export default function Home() {
 								</h3>
 								<p className="text-muted-foreground">
 									Yes, you can cancel your subscription at any time from your account settings.
-									You'll continue to have access until the end of your billing period.
+									Youll continue to have access until the end of your billing period.
 								</p>
 							</div>
 							<div className="rounded-lg border bg-card p-6">
 								<h3 className="mb-3 text-xl font-semibold">How soon will I receive my reading?</h3>
 								<p className="text-muted-foreground">
 									Readings are typically generated within minutes and displayed immediately in the
-									app. You'll also receive an email with your reading for future reference.
+									app. Youll also receive an email with your reading for future reference.
 								</p>
 							</div>
 						</div>

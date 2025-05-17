@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 			{status: 200}
 		);
 	} catch (error) {
-		console.error('Error creating fortune:', error);
+		//console.error('Error creating fortune:', error);
 		return NextResponse.json({error: 'Failed to process fortune submission'}, {status: 500});
 	}
 }

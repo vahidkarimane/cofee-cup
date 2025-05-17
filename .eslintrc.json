@@ -3,9 +3,10 @@
 	"plugins": ["prettier"],
 	"rules": {
 		"prettier/prettier": "error",
-		"no-unused-vars": ["warn", {"argsIgnorePattern": "^_", "varsIgnorePattern": "^_"}],
-		"no-console": "warn",
+		"no-unused-vars": "off",
+		"no-console": "off",
 		"react/prop-types": "off",
-		"react/react-in-jsx-scope": "off"
+		"react/react-in-jsx-scope": "off",
+		"react/no-unescaped-entities": "off"
 	}
 }

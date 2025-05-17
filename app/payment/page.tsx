@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, {Suspense} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {redirect} from 'next/navigation';
 import PaymentForm from '@/components/payment/PaymentForm';
 import {useAuth} from '@clerk/nextjs';
 
-export default function PaymentPage() {
+function PaymentContent() {
 	const searchParams = useSearchParams();
 	const {userId} = useAuth();
 	const fortuneId = searchParams.get('fortuneId');
@@ -22,6 +22,14 @@ export default function PaymentPage() {
 	}
 
 	return (
+		<div className="mt-10">
+			<PaymentForm fortuneId={fortuneId} />
+		</div>
+	);
+}
+
+export default function PaymentPage() {
+	return (
 		<div className="container py-12">
 			<div className="mx-auto max-w-4xl space-y-8">
 				<div className="text-center">
@@ -31,9 +39,9 @@ export default function PaymentPage() {
 					</p>
 				</div>
 
-				<div className="mt-10">
-					<PaymentForm fortuneId={fortuneId} />
-				</div>
+				<Suspense fallback={<div>Loading payment details...</div>}>
+					<PaymentContent />
+				</Suspense>
 
 				<div className="mt-8 text-center text-sm text-muted-foreground">
 					<p>

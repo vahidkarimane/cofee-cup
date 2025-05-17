@@ -5,3 +5,9 @@ build
 dist
 coverage
 public
+
+# UI components with formatting issues:
+components/ui/card.tsx
+components/ui/input.tsx
+components/ui/label.tsx
+components/ui/textarea.tsx

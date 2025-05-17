@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 			amount,
 		});
 	} catch (error) {
-		console.error('Error creating payment:', error);
+		//console.error('Error creating payment:', error);
 		return NextResponse.json({error: 'Failed to process payment request'}, {status: 500});
 	}
 }
@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
 			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 		}
 
+		const searchParams = req.nextUrl.searchParams;
+		const paymentId = searchParams.get('paymentId');
+
 		// Get the price for a fortune reading
 		const amount = await getFortuneReadingPrice();
 
@@ -58,7 +61,7 @@ export async function GET(req: NextRequest) {
 			amount,
 		});
 	} catch (error) {
-		console.error('Error getting price:', error);
+		//console.error('Error getting price:', error);
 		return NextResponse.json({error: 'Failed to get fortune reading price'}, {status: 500});
 	}
 }

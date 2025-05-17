@@ -35,7 +35,7 @@ export default function DashboardPage() {
 					// Clear the payment status from URL to prevent duplicate updates
 					router.replace(`/dashboard?fortuneId=${fortuneId}`, {scroll: false});
 				} catch (err) {
-					console.error('Error updating payment status:', err);
+					//console.error('Error updating payment status:', err);
 				}
 			}
 		}
@@ -63,7 +63,7 @@ export default function DashboardPage() {
 					}
 				}
 			} catch (err) {
-				console.error('Error fetching fortunes:', err);
+				//console.error('Error fetching fortunes:', err);
 				setError('Failed to load your fortunes. Please try again.');
 			} finally {
 				setLoading(false);
@@ -152,7 +152,7 @@ export default function DashboardPage() {
 						) : fortunes.length === 0 ? (
 							<>
 								<p className="text-muted-foreground">
-									You haven't submitted any coffee cup images yet.
+									You haven&apos;t submitted any coffee cup images yet.
 								</p>
 								<Link href="/fortune">
 									<Button className="mt-4">Get Your First Fortune</Button>

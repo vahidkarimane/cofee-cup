@@ -81,7 +81,7 @@ export async function getFortuneReadingPrice() {
  * @param currency Currency code
  * @returns Formatted price string
  */
-export function formatPrice(amount: number, currency: string = 'usd') {
+export async function formatPrice(amount: number, currency: string = 'usd') {
 	const formatter = new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: currency.toUpperCase(),

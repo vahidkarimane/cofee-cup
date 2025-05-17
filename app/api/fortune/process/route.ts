@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 			{status: 200}
 		);
 	} catch (error) {
-		console.error('Error processing fortune:', error);
+		//console.error('Error processing fortune:', error);
 		return NextResponse.json({error: 'Failed to process fortune prediction'}, {status: 500});
 	}
 }
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
 			{status: 200}
 		);
 	} catch (error) {
-		console.error('Error checking fortune status:', error);
+		//console.error('Error checking fortune status:', error);
 		return NextResponse.json({error: 'Failed to check fortune status'}, {status: 500});
 	}
 }
