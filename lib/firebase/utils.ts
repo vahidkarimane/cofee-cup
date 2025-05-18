@@ -29,14 +29,20 @@ const COLLECTIONS = {
 export async function createFortune(
 	userId: string,
 	imageUrl: string | string[],
-	notes?: string
+	name: string,
+	age: string,
+	intent: string,
+	about?: string
 ): Promise<string> {
 	try {
 		const fortuneData = {
 			userId,
 			imageUrl,
 			prediction: '',
-			notes: notes || '',
+			name,
+			age,
+			intent,
+			about: about || '',
 			createdAt: Timestamp.now(),
 			status: FortuneStatus.PENDING,
 		};

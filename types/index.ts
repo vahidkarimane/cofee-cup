@@ -15,7 +15,10 @@ export interface Fortune {
 	userId: string;
 	imageUrl: string | string[]; // Support for single or multiple image URLs
 	prediction: string;
-	notes?: string;
+	name: string;
+	age: string;
+	intent: string;
+	about?: string;
 	createdAt: Date;
 	status: FortuneStatus;
 	paymentId?: string;

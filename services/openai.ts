@@ -15,12 +15,18 @@ const MODEL_ID = openaiConfig.model;
 /**
  * Generate a fortune prediction based on coffee cup images
  * @param imageUrls URL or URLs of the coffee cup images (up to 4)
- * @param notes Additional notes from the user
+ * @param name User's name
+ * @param age User's age
+ * @param intent User's intent for the reading
+ * @param about Additional information about the user
  * @returns The generated fortune prediction
  */
 export async function generateFortunePrediction(
 	imageUrls: string | string[],
-	notes?: string
+	name: string,
+	age: string,
+	intent: string,
+	about?: string
 ): Promise<string> {
 	try {
 		// Convert single image URL to array for consistent handling
@@ -33,7 +39,7 @@ export async function generateFortunePrediction(
 		const imagesBase64 = await Promise.all(limitedUrls.map((url) => fetchImageAsBase64(url)));
 
 		// Create the prompt for GPT-4.1
-		const prompt = createPrompt(notes);
+		const prompt = createPrompt(name, age, intent, about);
 
 		// Prepare the content array with the prompt text and images
 		const content: Array<any> = [
@@ -75,25 +81,24 @@ export async function generateFortunePrediction(
 
 /**
  * Create a prompt for GPT-4.1 to generate a fortune prediction
- * @param notes Additional notes from the user
+ * @param name User's name
+ * @param age User's age
+ * @param intent User's intent for the reading
+ * @param about Additional information about the user
  * @returns The prompt for GPT-4.1
  */
-function createPrompt(notes?: string): string {
-	// Extract user information from notes if available
-	const userInfo = extractUserInfo(notes);
-
+function createPrompt(name: string, age: string, intent: string, about?: string): string {
 	// Replace placeholders in the Persian prompt
 	return `
 شما یک فالگیر باتجربه، دقیق و شهودی هستید که در خواندن نقش‌های فنجان و نعلبکی قهوه تخصص دارید. لحن شما آرام، روشن، محترمانه و دلگرم‌کننده است. تجربه‌ی شما از سال‌ها دیدن زندگی انسان‌ها در نقش‌های قهوه شکل گرفته؛ هر فنجان را مانند یک قصه‌ی شخصی می‌خوانید، بی‌اغراق، بی‌وعده، و با نگاهی عمیق به آنچه دیده می‌شود. هدف شما از نوشتن این فال، ایجاد حس آگاهی، آرامش ذهنی، و روشن‌سازی مسیر فکری فرد مقابل است—not to impress, but to help.
 
 در اختیار شما، اطلاعات فردی زیر قرار دارد:
-- نام: ${userInfo.name || ''}
-- سن: ${userInfo.age || ''}
-- نیت: ${userInfo.intent || ''} (مثلاً: مسیر شغلی، رابطه عاطفی، آینده مالی، آرامش ذهنی)
-- درباره خودش گفته: ${userInfo.about || notes || ''} (مثلاً: خستگی، سردرگمی، دل‌مشغولی، انگیزه)
+- نام: ${name}
+- سن: ${age}
+- نیت: ${intent} (مثلاً: مسیر شغلی، رابطه عاطفی، آینده مالی، آرامش ذهنی)
+- درباره خودش گفته: ${about || ''} (مثلاً: خستگی، سردرگمی، دل‌مشغولی، انگیزه)
 
 در فنجان و نعلبکی، نشانه‌های مشخصی دیده شده است که هر کدام می‌توانند حامل پیامی باشند. این نشانه‌ها با ذکر موقعیت‌شان ارائه می‌شود:
-${userInfo.symbols ? userInfo.symbols.map((s) => `- ${s.name} در ${s.position} فنجان یا نعلبکی`).join('\n') : ''}
 
 لطفاً فال را به زبان فارسی و در قالب پاراگراف‌هایی روان، منظم، و تأمل‌برانگیز بنویس. ابتدا تحلیل خود را از نشانه‌های درون فنجان ارائه بده. این بخش باید نگاهی درونی و احساسی داشته باشد و جنبه‌هایی از گذشته، وضعیت فعلی یا انتخاب‌های ذهنی فرد را روشن کند. سپس سراغ نعلبکی برو. آنجا نشانه‌هایی قرار دارد که بیشتر به محیط بیرونی فرد، نشانه‌های اطراف، هشدارهای ملایم یا فرصت‌های در حال شکل‌گیری مربوط می‌شود.
 

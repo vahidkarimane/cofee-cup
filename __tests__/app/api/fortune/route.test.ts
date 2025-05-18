@@ -35,7 +35,10 @@ describe('Fortune API Route', () => {
 		const req = {
 			json: jest.fn().mockResolvedValue({
 				imageUrl: 'https://example.com/image.jpg',
-				notes: 'Test notes',
+				name: 'Test User',
+				age: '30',
+				intent: 'career',
+				about: 'Test notes',
 			}),
 		} as any;
 
@@ -53,7 +56,10 @@ describe('Fortune API Route', () => {
 
 		const req = {
 			json: jest.fn().mockResolvedValue({
-				notes: 'Test notes',
+				name: 'Test User',
+				age: '30',
+				intent: 'career',
+				about: 'Test notes',
 			}),
 		} as any;
 
@@ -69,7 +75,10 @@ describe('Fortune API Route', () => {
 		// Arrange
 		const userId = 'test-user-id';
 		const imageUrl = 'https://example.com/image.jpg';
-		const notes = 'Test notes';
+		const name = 'Test User';
+		const age = '30';
+		const intent = 'career';
+		const about = 'Test notes';
 		const fortuneId = 'test-fortune-id';
 
 		(auth as unknown as jest.Mock).mockResolvedValue({userId});
@@ -78,7 +87,10 @@ describe('Fortune API Route', () => {
 		const req = {
 			json: jest.fn().mockResolvedValue({
 				imageUrl,
-				notes,
+				name,
+				age,
+				intent,
+				about,
 			}),
 		} as any;
 
@@ -87,7 +99,7 @@ describe('Fortune API Route', () => {
 
 		// Assert
 		expect(auth).toHaveBeenCalled();
-		expect(createFortune).toHaveBeenCalledWith(userId, imageUrl, notes);
+		expect(createFortune).toHaveBeenCalledWith(userId, imageUrl, name, age, intent, about);
 		expect(mockJson).toHaveBeenCalledWith(
 			{
 				message: 'Fortune submission received',
@@ -106,7 +118,10 @@ describe('Fortune API Route', () => {
 		const req = {
 			json: jest.fn().mockResolvedValue({
 				imageUrl: 'https://example.com/image.jpg',
-				notes: 'Test notes',
+				name: 'Test User',
+				age: '30',
+				intent: 'career',
+				about: 'Test notes',
 			}),
 		} as any;
 

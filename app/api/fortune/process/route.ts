@@ -43,7 +43,13 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Generate a fortune prediction using OpenAI GPT-4.1
-		const prediction = await generateFortunePrediction(fortune.imageUrl, fortune.notes);
+		const prediction = await generateFortunePrediction(
+			fortune.imageUrl,
+			fortune.name,
+			fortune.age,
+			fortune.intent,
+			fortune.about
+		);
 
 		// Update the fortune with the prediction
 		await updateFortunePrediction(fortuneId, prediction);

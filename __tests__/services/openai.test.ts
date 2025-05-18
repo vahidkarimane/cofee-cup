@@ -61,9 +61,12 @@ describe('OpenAI Service', () => {
 	describe('generateFortunePrediction', () => {
 		it('should generate a fortune prediction with a single image URL', async () => {
 			const imageUrl = 'https://example.com/image.jpg';
-			const notes = 'Some notes';
+			const name = 'Test User';
+			const age = '30';
+			const intent = 'career';
+			const about = 'Some notes';
 
-			const result = await generateFortunePrediction(imageUrl, notes);
+			const result = await generateFortunePrediction(imageUrl, name, age, intent, about);
 
 			expect(result).toBe('This is a mock fortune prediction');
 			expect(fetch).toHaveBeenCalledWith(imageUrl);
@@ -71,9 +74,12 @@ describe('OpenAI Service', () => {
 
 		it('should generate a fortune prediction with multiple image URLs', async () => {
 			const imageUrls = ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'];
-			const notes = 'Some notes';
+			const name = 'Test User';
+			const age = '30';
+			const intent = 'career';
+			const about = 'Some notes';
 
-			const result = await generateFortunePrediction(imageUrls, notes);
+			const result = await generateFortunePrediction(imageUrls, name, age, intent, about);
 
 			expect(result).toBe('This is a mock fortune prediction');
 			expect(fetch).toHaveBeenCalledTimes(2);
@@ -83,11 +89,15 @@ describe('OpenAI Service', () => {
 
 		it('should handle errors gracefully', async () => {
 			const imageUrl = 'https://example.com/image.jpg';
+			const name = 'Test User';
+			const age = '30';
+			const intent = 'career';
+			const about = 'Some notes';
 
 			// Mock the create method to reject with an error for this test only
 			mockCreate.mockRejectedValueOnce(new Error('API Error'));
 
-			await expect(generateFortunePrediction(imageUrl)).rejects.toThrow(
+			await expect(generateFortunePrediction(imageUrl, name, age, intent, about)).rejects.toThrow(
 				'Failed to generate fortune prediction'
 			);
 		});

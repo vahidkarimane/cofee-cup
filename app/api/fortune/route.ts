@@ -11,10 +11,22 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 		}
 
-		const {imageUrl, notes} = await req.json();
+		const {imageUrl, name, age, intent, about} = await req.json();
 
 		if (!imageUrl) {
 			return NextResponse.json({error: 'Image URL is required'}, {status: 400});
+		}
+
+		if (!name) {
+			return NextResponse.json({error: 'Name is required'}, {status: 400});
+		}
+
+		if (!age) {
+			return NextResponse.json({error: 'Age is required'}, {status: 400});
+		}
+
+		if (!intent) {
+			return NextResponse.json({error: 'Intent is required'}, {status: 400});
 		}
 
 		// Handle both single URL and array of URLs
@@ -29,7 +41,7 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Create a new fortune record in Firestore
-		const fortuneId = await createFortune(userId, imageUrl, notes);
+		const fortuneId = await createFortune(userId, imageUrl, name, age, intent, about);
 
 		// This will integrate with OpenAI GPT-4.1 for AI-based fortune telling
 		// For now, we just create the record with a pending status

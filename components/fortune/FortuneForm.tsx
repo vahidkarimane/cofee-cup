@@ -23,8 +23,14 @@ import * as z from 'zod';
 
 // Define the form schema with zod
 const formSchema = z.object({
-	notes: z.string().max(500, {
-		message: 'Notes must be 500 characters or less',
+	name: z.string().min(1, {message: 'Name is required'}),
+	age: z
+		.string()
+		.min(1, {message: 'Age is required'})
+		.refine((val) => !isNaN(parseInt(val)), {message: 'Age must be a number'}),
+	intent: z.string().min(1, {message: 'Intent is required'}),
+	about: z.string().max(500, {
+		message: 'About yourself must be 500 characters or less',
 	}),
 });
 
@@ -40,8 +46,8 @@ export default function FortuneForm() {
 			maxImages: 4,
 		});
 
-	const [submitting, setSubmitting] = useState(false);
-	const [submitError, setSubmitError] = useState<string | null>(null);
+	const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
 	// Initialize react-hook-form
 	const {
@@ -52,15 +58,18 @@ export default function FortuneForm() {
 	} = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			notes: '',
+			name: '',
+			age: '',
+			intent: '',
+			about: '',
 		},
 	});
 
 	const onSubmit = async (formData: FormValues) => {
 		if (images.length === 0 || !userId) return;
 
-		setSubmitting(true);
-		setSubmitError(null);
+		setStatus('submitting');
+		setStatusMessage('Submitting your fortune request...');
 
 		try {
 			// Upload images to Firebase Storage
@@ -74,7 +83,10 @@ export default function FortuneForm() {
 				},
 				body: JSON.stringify({
 					imageUrl: imageUrls.length === 1 ? imageUrls[0] : imageUrls, // Send as array if multiple
-					notes: formData.notes,
+					name: formData.name,
+					age: formData.age,
+					intent: formData.intent,
+					about: formData.about,
 				}),
 			});
 
@@ -84,6 +96,9 @@ export default function FortuneForm() {
 
 			const data = await response.json();
 
+			setStatus('success');
+			setStatusMessage('Fortune request submitted successfully!');
+
 			// Reset form
 			resetImages();
 			reset();
@@ -92,9 +107,16 @@ export default function FortuneForm() {
 			router.push(`/payment?fortuneId=${data.fortuneId}`);
 		} catch (err) {
 			console.error('Error submitting fortune:', err);
-			setSubmitError(err instanceof Error ? err.message : 'An error occurred');
+			setStatus('error');
+			setStatusMessage(
+				err instanceof Error
+					? err.message
+					: 'An error occurred while submitting your fortune request'
+			);
 		} finally {
-			setSubmitting(false);
+			if (status !== 'success') {
+				setStatus('idle');
+			}
 		}
 	};
 
@@ -120,7 +142,7 @@ export default function FortuneForm() {
 									accept="image/jpeg,image/png,image/jpg"
 									className="absolute inset-0 cursor-pointer opacity-0"
 									onChange={handleImageChange}
-									disabled={isLoading || submitting || images.length >= 4}
+									disabled={isLoading || status === 'submitting' || images.length >= 4}
 									multiple
 								/>
 								<div className="flex flex-col items-center justify-center space-y-2 text-center">
@@ -200,23 +222,76 @@ export default function FortuneForm() {
 						</div>
 					</div>
 
-					<div className="space-y-2">
-						<Label htmlFor="notes" className="text-base">
-							Additional Notes (Optional)
-						</Label>
-						<Textarea
-							id="notes"
-							placeholder="Add any specific questions or areas of interest for your reading..."
-							className={`min-h-[100px] ${errors.notes ? 'border-destructive' : ''}`}
-							disabled={isLoading || submitting}
-							{...register('notes')}
-						/>
-						{errors.notes && <p className="text-sm text-destructive">{errors.notes.message}</p>}
+					<div className="space-y-6">
+						<div className="space-y-2">
+							<Label htmlFor="name" className="text-base">
+								Your Name *
+							</Label>
+							<Input
+								id="name"
+								placeholder="Enter your name"
+								className={errors.name ? 'border-destructive' : ''}
+								disabled={isLoading || status === 'submitting'}
+								{...register('name')}
+							/>
+							{errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="age" className="text-base">
+								Your Age *
+							</Label>
+							<Input
+								id="age"
+								placeholder="Enter your age"
+								type="number"
+								className={errors.age ? 'border-destructive' : ''}
+								disabled={isLoading || status === 'submitting'}
+								{...register('age')}
+							/>
+							{errors.age && <p className="text-sm text-destructive">{errors.age.message}</p>}
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="intent" className="text-base">
+								Your Intent for Reading *
+							</Label>
+							<Input
+								id="intent"
+								placeholder="e.g., career path, relationship, financial future"
+								className={errors.intent ? 'border-destructive' : ''}
+								disabled={isLoading || status === 'submitting'}
+								{...register('intent')}
+							/>
+							{errors.intent && <p className="text-sm text-destructive">{errors.intent.message}</p>}
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="about" className="text-base">
+								About Yourself (Optional)
+							</Label>
+							<Textarea
+								id="about"
+								placeholder="Share anything about yourself that might help with your reading..."
+								className={`min-h-[100px] ${errors.about ? 'border-destructive' : ''}`}
+								disabled={isLoading || status === 'submitting'}
+								{...register('about')}
+							/>
+							{errors.about && <p className="text-sm text-destructive">{errors.about.message}</p>}
+						</div>
 					</div>
 
-					{submitError && (
-						<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-							{submitError}
+					{statusMessage && (
+						<div
+							className={`rounded-md p-3 text-sm ${
+								status === 'error'
+									? 'bg-destructive/10 text-destructive'
+									: status === 'success'
+										? 'bg-green-100 text-green-800'
+										: 'bg-blue-100 text-blue-800'
+							}`}
+						>
+							{statusMessage}
 						</div>
 					)}
 				</form>
@@ -232,10 +307,10 @@ export default function FortuneForm() {
 					type="submit"
 					form="fortune-form"
 					onClick={handleSubmit(onSubmit)}
-					disabled={images.length === 0 || isLoading || submitting}
+					disabled={images.length === 0 || isLoading || status === 'submitting'}
 					className="w-full sm:w-auto"
 				>
-					{submitting ? (
+					{status === 'submitting' ? (
 						<>
 							<svg
 								className="mr-2 h-4 w-4 animate-spin"
