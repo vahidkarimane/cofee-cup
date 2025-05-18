@@ -17,10 +17,21 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({error: 'Image URL is required'}, {status: 400});
 		}
 
+		// Handle both single URL and array of URLs
+		const validImageUrl = Array.isArray(imageUrl)
+			? imageUrl.length > 0
+				? imageUrl
+				: null
+			: imageUrl;
+
+		if (!validImageUrl) {
+			return NextResponse.json({error: 'Valid image URL is required'}, {status: 400});
+		}
+
 		// Create a new fortune record in Firestore
 		const fortuneId = await createFortune(userId, imageUrl, notes);
 
-		// In the future, this will integrate with AWS Bedrock for AI-based fortune telling
+		// This will integrate with OpenAI GPT-4.1 for AI-based fortune telling
 		// For now, we just create the record with a pending status
 
 		return NextResponse.json(

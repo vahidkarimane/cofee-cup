@@ -41,6 +41,12 @@ export const getAwsBedrockConfig = () => ({
 	modelId: process.env.AWS_BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0',
 });
 
+// OpenAI Configuration (only validate when OpenAI is being used)
+export const getOpenAIConfig = () => ({
+	apiKey: process.env.OPENAI_API_KEY,
+	model: process.env.OPENAI_MODEL || 'gpt-4.1-vision-preview',
+});
+
 // Email Service Configuration (only validate when email service is being used)
 export const getEmailConfig = () => ({
 	apiKey: process.env.RESEND_API_KEY,

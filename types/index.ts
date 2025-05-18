@@ -13,7 +13,7 @@ export interface User {
 export interface Fortune {
 	id: string;
 	userId: string;
-	imageUrl: string;
+	imageUrl: string | string[]; // Support for single or multiple image URLs
 	prediction: string;
 	notes?: string;
 	createdAt: Date;

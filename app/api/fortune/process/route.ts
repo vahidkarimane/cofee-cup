@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {auth} from '@clerk/nextjs/server';
 import {getFortune, updateFortunePrediction} from '@/lib/firebase/utils';
-import {generateFortunePrediction} from '@/services/bedrock';
+import {generateFortunePrediction} from '@/services/openai';
 import {FortuneStatus} from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		// Generate a fortune prediction using AWS Bedrock
+		// Generate a fortune prediction using OpenAI GPT-4.1
 		const prediction = await generateFortunePrediction(fortune.imageUrl, fortune.notes);
 
 		// Update the fortune with the prediction

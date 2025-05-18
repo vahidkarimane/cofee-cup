@@ -28,7 +28,7 @@ const COLLECTIONS = {
 // Fortune operations
 export async function createFortune(
 	userId: string,
-	imageUrl: string,
+	imageUrl: string | string[],
 	notes?: string
 ): Promise<string> {
 	try {
