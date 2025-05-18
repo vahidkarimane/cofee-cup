@@ -286,7 +286,13 @@ export default function FortuneResult({fortune, isLoading = false}: FortuneResul
 				{/* Coffee Cup Image */}
 				<div className="overflow-hidden rounded-md border">
 					<div className="relative aspect-video">
-						<Image src={fortune.imageUrl} alt="Coffee cup" fill className="object-cover" priority />
+						<Image
+							src={Array.isArray(fortune.imageUrl) ? fortune.imageUrl[0] : fortune.imageUrl}
+							alt="Coffee cup"
+							fill
+							className="object-cover"
+							priority
+						/>
 					</div>
 				</div>
 
