@@ -44,7 +44,7 @@ export const getAwsBedrockConfig = () => ({
 // OpenAI Configuration (only validate when OpenAI is being used)
 export const getOpenAIConfig = () => ({
 	apiKey: process.env.OPENAI_API_KEY,
-	model: process.env.OPENAI_MODEL || 'gpt-4.1-vision-preview',
+	model: process.env.OPENAI_MODEL || 'gpt-4.1',
 });
 
 // Email Service Configuration (only validate when email service is being used)

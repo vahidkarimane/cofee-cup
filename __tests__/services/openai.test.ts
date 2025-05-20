@@ -33,7 +33,7 @@ const {mockCreate} = jest.requireMock('openai');
 jest.mock('@/lib/env', () => ({
 	getOpenAIConfig: jest.fn().mockReturnValue({
 		apiKey: 'mock-api-key',
-		model: 'gpt-4.1-vision-preview',
+		model: 'gpt-4.1',
 	}),
 }));
 
