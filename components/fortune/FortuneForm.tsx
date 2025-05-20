@@ -75,6 +75,60 @@ export default function FortuneForm() {
 		});
 	};
 
+	// Resize and convert File to base64
+	const resizeAndConvertToBase64 = (file: File): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			// Create an image object
+			const img = new window.Image();
+			img.onload = () => {
+				// Create a canvas to draw the resized image
+				const canvas = document.createElement('canvas');
+
+				// Set maximum dimensions
+				const MAX_WIDTH = 800;
+				const MAX_HEIGHT = 800;
+
+				// Calculate new dimensions while maintaining aspect ratio
+				let width = img.width;
+				let height = img.height;
+
+				if (width > height) {
+					if (width > MAX_WIDTH) {
+						height = height * (MAX_WIDTH / width);
+						width = MAX_WIDTH;
+					}
+				} else {
+					if (height > MAX_HEIGHT) {
+						width = width * (MAX_HEIGHT / height);
+						height = MAX_HEIGHT;
+					}
+				}
+
+				// Set canvas dimensions
+				canvas.width = width;
+				canvas.height = height;
+
+				// Draw the resized image on canvas
+				const ctx = canvas.getContext('2d');
+				ctx!.drawImage(img, 0, 0, width, height);
+
+				// Convert to base64 with reduced quality (0.7 = 70% quality)
+				const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+				resolve(dataUrl);
+			};
+
+			img.onerror = (error: Event | string) => reject(error);
+
+			// Load the file as a data URL
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				img.src = e.target!.result as string;
+			};
+			reader.onerror = (error: ProgressEvent<FileReader>) => reject(error);
+			reader.readAsDataURL(file);
+		});
+	};
+
 	const onSubmit = async (formData: FormValues) => {
 		if (images.length === 0 || !userId) {
 			setStatus('error');
@@ -88,8 +142,10 @@ export default function FortuneForm() {
 		setStatusMessage('Submitting your fortune request...');
 
 		try {
-			// Convert images to base64
-			const base64Images = await Promise.all(images.map((image) => convertToBase64(image.file)));
+			// Resize and convert images to base64
+			const base64Images = await Promise.all(
+				images.map((image) => resizeAndConvertToBase64(image.file))
+			);
 
 			// Submit directly to API without storing images
 			const response = await fetch('/api/fortune/direct-prediction', {

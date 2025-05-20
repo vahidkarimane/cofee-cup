@@ -4,6 +4,16 @@ import {FortuneStatus} from '@/types';
 import {generateFortunePredictionFromBase64} from '@/services/openai';
 import {createFortune, updateFortunePrediction} from '@/lib/firebase/utils';
 
+// Configure the API route to handle larger payloads
+export const config = {
+	api: {
+		bodyParser: {
+			sizeLimit: '10mb', // Increase the body parser size limit to 10MB
+		},
+		responseLimit: '10mb', // Increase the response size limit to 10MB
+	},
+};
+
 export async function POST(req: NextRequest) {
 	try {
 		// Verify authentication
