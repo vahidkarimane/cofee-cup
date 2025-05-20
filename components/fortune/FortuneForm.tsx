@@ -65,6 +65,16 @@ export default function FortuneForm() {
 		},
 	});
 
+	// Convert File to base64
+	const convertToBase64 = (file: File): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = (error) => reject(error);
+		});
+	};
+
 	const onSubmit = async (formData: FormValues) => {
 		if (images.length === 0 || !userId) return;
 
@@ -72,17 +82,17 @@ export default function FortuneForm() {
 		setStatusMessage('Submitting your fortune request...');
 
 		try {
-			// Upload images to Firebase Storage
-			const imageUrls = await uploadToFirebase(userId);
+			// Convert images to base64
+			const base64Images = await Promise.all(images.map((image) => convertToBase64(image.file)));
 
-			// Submit to API
-			const response = await fetch('/api/fortune', {
+			// Submit directly to API without storing images
+			const response = await fetch('/api/fortune/direct-prediction', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					imageUrl: imageUrls.length === 1 ? imageUrls[0] : imageUrls, // Send as array if multiple
+					images: base64Images,
 					name: formData.name,
 					age: formData.age,
 					intent: formData.intent,

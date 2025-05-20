@@ -80,6 +80,73 @@ export async function generateFortunePrediction(
 }
 
 /**
+ * Generate a fortune prediction based on coffee cup images in base64 format
+ * @param imagesBase64 Array of base64-encoded images
+ * @param name User's name
+ * @param age User's age
+ * @param intent User's intent for the reading
+ * @param about Additional information about the user
+ * @returns The generated fortune prediction
+ */
+export async function generateFortunePredictionFromBase64(
+	imagesBase64: string[],
+	name: string,
+	age: string,
+	intent: string,
+	about?: string
+): Promise<string> {
+	try {
+		// Limit to 4 images maximum
+		const limitedImages = imagesBase64.slice(0, 4);
+
+		// Create the prompt for GPT-4.1
+		const prompt = createPrompt(name, age, intent, about);
+
+		// Prepare the content array with the prompt text and images
+		const content: Array<any> = [
+			{
+				type: 'text',
+				text: prompt,
+			},
+		];
+
+		// Add each image to the content array
+		limitedImages.forEach((imageBase64) => {
+			// If the base64 string already includes the data URL prefix, use it directly
+			// Otherwise, add the prefix
+			const imageUrl = imageBase64.startsWith('data:')
+				? imageBase64
+				: `data:image/jpeg;base64,${imageBase64.replace(/^data:image\/\w+;base64,/, '')}`;
+
+			content.push({
+				type: 'image_url',
+				image_url: {
+					url: imageUrl,
+				},
+			});
+		});
+
+		// Invoke the model
+		const response = await openai.chat.completions.create({
+			model: MODEL_ID,
+			messages: [
+				{
+					role: 'user',
+					content: content,
+				},
+			],
+			max_tokens: 1000,
+			temperature: 0.7,
+		});
+
+		return response.choices[0].message.content || 'No prediction generated';
+	} catch (error) {
+		console.error('Error generating fortune prediction:', error);
+		throw new Error('Failed to generate fortune prediction');
+	}
+}
+
+/**
  * Create a prompt for GPT-4.1 to generate a fortune prediction
  * @param name User's name
  * @param age User's age

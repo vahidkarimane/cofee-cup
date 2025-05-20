@@ -283,18 +283,35 @@ export default function FortuneResult({fortune, isLoading = false}: FortuneResul
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">
-				{/* Coffee Cup Image */}
-				<div className="overflow-hidden rounded-md border">
-					<div className="relative aspect-video">
-						<Image
-							src={Array.isArray(fortune.imageUrl) ? fortune.imageUrl[0] : fortune.imageUrl}
-							alt="Coffee cup"
-							fill
-							className="object-cover"
-							priority
-						/>
-					</div>
-				</div>
+				{/* Coffee Cup Image - Only show if image URLs exist */}
+				{fortune.imageUrl &&
+					(Array.isArray(fortune.imageUrl) ? (
+						fortune.imageUrl.length > 0 && (
+							<div className="overflow-hidden rounded-md border">
+								<div className="relative aspect-video">
+									<Image
+										src={fortune.imageUrl[0]}
+										alt="Coffee cup"
+										fill
+										className="object-cover"
+										priority
+									/>
+								</div>
+							</div>
+						)
+					) : (
+						<div className="overflow-hidden rounded-md border">
+							<div className="relative aspect-video">
+								<Image
+									src={fortune.imageUrl}
+									alt="Coffee cup"
+									fill
+									className="object-cover"
+									priority
+								/>
+							</div>
+						</div>
+					))}
 
 				{/* Fortune Content */}
 				{renderFortuneContent()}
