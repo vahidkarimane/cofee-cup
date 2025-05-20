@@ -96,6 +96,11 @@ export async function generateFortunePredictionFromBase64(
 	about?: string
 ): Promise<string> {
 	try {
+		// Validate OpenAI API key
+		if (!openaiConfig.apiKey) {
+			throw new Error('OpenAI API key is missing. Please check your environment variables.');
+		}
+
 		// Limit to 4 images maximum
 		const limitedImages = imagesBase64.slice(0, 4);
 
@@ -111,38 +116,66 @@ export async function generateFortunePredictionFromBase64(
 		];
 
 		// Add each image to the content array
-		limitedImages.forEach((imageBase64) => {
-			// If the base64 string already includes the data URL prefix, use it directly
-			// Otherwise, add the prefix
-			const imageUrl = imageBase64.startsWith('data:')
-				? imageBase64
-				: `data:image/jpeg;base64,${imageBase64.replace(/^data:image\/\w+;base64,/, '')}`;
+		for (let i = 0; i < limitedImages.length; i++) {
+			try {
+				const imageBase64 = limitedImages[i];
+				// If the base64 string already includes the data URL prefix, use it directly
+				// Otherwise, add the prefix
+				const imageUrl = imageBase64.startsWith('data:')
+					? imageBase64
+					: `data:image/jpeg;base64,${imageBase64.replace(/^data:image\/\w+;base64,/, '')}`;
 
-			content.push({
-				type: 'image_url',
-				image_url: {
-					url: imageUrl,
-				},
-			});
-		});
+				content.push({
+					type: 'image_url',
+					image_url: {
+						url: imageUrl,
+					},
+				});
+			} catch (imgError) {
+				console.error(`Error processing image ${i}:`, imgError);
+				throw new Error(
+					`Failed to process image ${i}: ${imgError instanceof Error ? imgError.message : 'Unknown error'}`
+				);
+			}
+		}
 
 		// Invoke the model
-		const response = await openai.chat.completions.create({
-			model: MODEL_ID,
-			messages: [
-				{
-					role: 'user',
-					content: content,
-				},
-			],
-			max_tokens: 1000,
-			temperature: 0.7,
-		});
+		try {
+			const response = await openai.chat.completions.create({
+				model: MODEL_ID,
+				messages: [
+					{
+						role: 'user',
+						content: content,
+					},
+				],
+				max_tokens: 1000,
+				temperature: 0.7,
+			});
 
-		return response.choices[0].message.content || 'No prediction generated';
+			return response.choices[0].message.content || 'No prediction generated';
+		} catch (apiError) {
+			console.error('OpenAI API error:', apiError);
+			if (apiError instanceof Error) {
+				// Check for specific OpenAI error types
+				const errorMessage = apiError.message;
+				if (errorMessage.includes('API key')) {
+					throw new Error('Invalid OpenAI API key. Please check your configuration.');
+				} else if (errorMessage.includes('rate limit')) {
+					throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+				} else if (errorMessage.includes('model')) {
+					throw new Error(
+						`Model error: ${errorMessage}. The model ${MODEL_ID} may not be available.`
+					);
+				}
+			}
+			throw new Error(
+				`OpenAI API error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`
+			);
+		}
 	} catch (error) {
 		console.error('Error generating fortune prediction:', error);
-		throw new Error('Failed to generate fortune prediction');
+		throw error; // Propagate the detailed error
 	}
 }
 

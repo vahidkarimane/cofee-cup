@@ -76,7 +76,13 @@ export default function FortuneForm() {
 	};
 
 	const onSubmit = async (formData: FormValues) => {
-		if (images.length === 0 || !userId) return;
+		if (images.length === 0 || !userId) {
+			setStatus('error');
+			setStatusMessage(
+				images.length === 0 ? 'Please upload at least one image' : 'Authentication required'
+			);
+			return;
+		}
 
 		setStatus('submitting');
 		setStatusMessage('Submitting your fortune request...');
@@ -100,11 +106,12 @@ export default function FortuneForm() {
 				}),
 			});
 
-			if (!response.ok) {
-				throw new Error('Failed to submit fortune request');
-			}
-
 			const data = await response.json();
+
+			if (!response.ok) {
+				console.error('Server error response:', data);
+				throw new Error(data.details || data.error || 'Failed to submit fortune request');
+			}
 
 			setStatus('success');
 			setStatusMessage('Fortune request submitted successfully!');
