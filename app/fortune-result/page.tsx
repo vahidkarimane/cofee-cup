@@ -43,29 +43,80 @@ function FortuneResultContent() {
 
 				const data = await response.json();
 
-				// If the fortune doesn't have a prediction yet, process it
+				// Check the status of the fortune
 				if (data.status === FortuneStatus.PENDING) {
-					const processResponse = await fetch('/api/fortune/process', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							fortuneId,
-						}),
-					});
-
-					if (!processResponse.ok) {
-						throw new Error('Failed to process fortune');
-					}
-
-					const processData = await processResponse.json();
-
-					// Create a fortune object with the prediction
+					// Fortune is pending payment
 					setFortune({
 						id: fortuneId,
-						userId: userId || 'anonymous', // Provide a default value for userId
-						prediction: processData.prediction,
+						userId: userId || 'anonymous',
+						prediction: '',
+						status: FortuneStatus.PENDING,
+						createdAt: new Date(),
+						name: '',
+						age: '',
+						intent: '',
+						imageUrl: [],
+					});
+				} else if (data.status === FortuneStatus.PROCESSING) {
+					// Fortune is being processed
+					setFortune({
+						id: fortuneId,
+						userId: userId || 'anonymous',
+						prediction: '',
+						status: FortuneStatus.PROCESSING,
+						createdAt: new Date(),
+						name: '',
+						age: '',
+						intent: '',
+						imageUrl: [],
+					});
+
+					// Poll for updates every 5 seconds
+					const intervalId = setInterval(async () => {
+						try {
+							const statusResponse = await fetch(`/api/fortune/process?fortuneId=${fortuneId}`, {
+								method: 'GET',
+							});
+
+							if (!statusResponse.ok) {
+								throw new Error('Failed to check fortune status');
+							}
+
+							const statusData = await statusResponse.json();
+
+							if (statusData.status === FortuneStatus.COMPLETED) {
+								// Fortune is complete
+								setFortune({
+									id: fortuneId,
+									userId: userId || 'anonymous',
+									prediction: statusData.prediction,
+									status: FortuneStatus.COMPLETED,
+									createdAt: new Date(),
+									name: '',
+									age: '',
+									intent: '',
+									imageUrl: [],
+								});
+								clearInterval(intervalId);
+							} else if (statusData.status === FortuneStatus.FAILED) {
+								// Fortune processing failed
+								setError('Fortune processing failed. Please try again.');
+								clearInterval(intervalId);
+							}
+						} catch (pollError) {
+							console.error('Error polling fortune status:', pollError);
+							clearInterval(intervalId);
+						}
+					}, 5000);
+
+					// Clean up interval on component unmount
+					return () => clearInterval(intervalId);
+				} else if (data.status === FortuneStatus.COMPLETED) {
+					// Fortune already has a prediction
+					setFortune({
+						id: fortuneId,
+						userId: userId || 'anonymous',
+						prediction: data.prediction,
 						status: FortuneStatus.COMPLETED,
 						createdAt: new Date(),
 						name: '',
@@ -73,19 +124,9 @@ function FortuneResultContent() {
 						intent: '',
 						imageUrl: [],
 					});
-				} else {
-					// Fortune already has a prediction
-					setFortune({
-						id: fortuneId,
-						userId: userId || 'anonymous', // Provide a default value for userId
-						prediction: data.prediction,
-						status: data.status,
-						createdAt: new Date(),
-						name: '',
-						age: '',
-						intent: '',
-						imageUrl: [],
-					});
+				} else if (data.status === FortuneStatus.FAILED) {
+					// Fortune processing failed
+					throw new Error('Fortune processing failed. Please try again.');
 				}
 			} catch (err) {
 				console.error('Error fetching fortune:', err);

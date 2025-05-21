@@ -94,6 +94,22 @@ export async function updateFortunePrediction(
 	}
 }
 
+export async function updateFortuneStatus(fortuneId: string, status: FortuneStatus): Promise<void> {
+	try {
+		const {error} = await supabase
+			.from(TABLES.FORTUNES)
+			.update({
+				status,
+			})
+			.eq('id', fortuneId);
+
+		if (error) throw error;
+	} catch (error) {
+		console.error('Error updating fortune status:', error);
+		throw new Error('Failed to update fortune status');
+	}
+}
+
 export async function getUserFortunes(userId: string): Promise<Fortune[]> {
 	try {
 		const {data, error} = await supabase

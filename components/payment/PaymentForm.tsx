@@ -172,14 +172,54 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 		if (error) {
 			// Show error to your customer
 			setMessage(error.message || 'An unexpected error occurred.');
+			setIsLoading(false);
 		} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-			// Payment succeeded, redirect to dashboard
-			router.push(`/dashboard?fortuneId=${fortuneId}&payment=success`);
+			try {
+				// Get the stored images from localStorage
+				const storedImages = localStorage.getItem(`fortune_images_${fortuneId}`);
+
+				if (!storedImages) {
+					throw new Error('Fortune images not found');
+				}
+
+				const images = JSON.parse(storedImages);
+
+				// Process the fortune after successful payment
+				const processingResponse = await fetch('/api/fortune/process-paid', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						fortuneId,
+						paymentIntentId: paymentIntent.id,
+						images,
+					}),
+				});
+
+				if (!processingResponse.ok) {
+					const errorData = await processingResponse.json();
+					throw new Error(errorData.details || errorData.error || 'Failed to process fortune');
+				}
+
+				// Clean up the stored images
+				localStorage.removeItem(`fortune_images_${fortuneId}`);
+
+				// Redirect to fortune result page
+				router.push(`/fortune-result?fortuneId=${fortuneId}`);
+			} catch (processError) {
+				console.error('Error processing fortune:', processError);
+				setMessage(
+					processError instanceof Error
+						? processError.message
+						: 'Payment succeeded but fortune processing failed. Please contact support.'
+				);
+				setIsLoading(false);
+			}
 		} else {
 			setMessage('An unexpected error occurred.');
+			setIsLoading(false);
 		}
-
-		setIsLoading(false);
 	};
 
 	return (

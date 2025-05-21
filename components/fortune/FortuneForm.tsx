@@ -140,7 +140,7 @@ export default function FortuneForm() {
 		const effectiveUserId = userId || 'anonymous';
 
 		setStatus('submitting');
-		setStatusMessage('Submitting your fortune request...');
+		setStatusMessage('Preparing your fortune request...');
 
 		try {
 			// Resize and convert images to base64
@@ -148,8 +148,8 @@ export default function FortuneForm() {
 				images.map((image) => resizeAndConvertToBase64(image.file))
 			);
 
-			// Submit directly to API without storing images
-			const response = await fetch('/api/fortune/direct-prediction', {
+			// Create a pending fortune request
+			const response = await fetch('/api/fortune/create-pending', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -170,15 +170,20 @@ export default function FortuneForm() {
 				throw new Error(data.details || data.error || 'Failed to submit fortune request');
 			}
 
+			// Store the base64 images in localStorage for later use
+			// This is a simplified approach - in a production environment,
+			// you might want to store these in a database with a TTL
+			localStorage.setItem(`fortune_images_${data.fortuneId}`, JSON.stringify(base64Images));
+
 			setStatus('success');
-			setStatusMessage('Fortune request submitted successfully!');
+			setStatusMessage('Redirecting to payment...');
 
 			// Reset form
 			resetImages();
 			reset();
 
-			// Redirect to fortune result page (bypassing payment)
-			router.push(`/fortune-result?fortuneId=${data.fortuneId}`);
+			// Redirect to payment page with the fortuneId
+			router.push(`/payment?fortuneId=${data.fortuneId}`);
 		} catch (err) {
 			console.error('Error submitting fortune:', err);
 			setStatus('error');
@@ -403,7 +408,7 @@ export default function FortuneForm() {
 							Processing...
 						</>
 					) : (
-						'Submit for Reading'
+						'Proceed to Payment'
 					)}
 				</Button>
 			</CardFooter>
