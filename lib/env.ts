@@ -3,17 +3,17 @@
  */
 
 // Function to validate that required environment variables are set
-const validateEnv = (key: string): string => {
+const validateEnv = (key: string, required: boolean = true): string => {
 	const value = process.env[key];
-	if (!value) {
+	if (!value && required) {
 		throw new Error(`Missing environment variable: ${key}`);
 	}
-	return value;
+	return value || '';
 };
 
-// Clerk Authentication
-export const CLERK_PUBLISHABLE_KEY = validateEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
-export const CLERK_SECRET_KEY = validateEnv('CLERK_SECRET_KEY');
+// Clerk Authentication (optional for development)
+export const CLERK_PUBLISHABLE_KEY = validateEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', false);
+export const CLERK_SECRET_KEY = validateEnv('CLERK_SECRET_KEY', false);
 
 // Firebase Configuration (only validate when Firebase is being used)
 export const getFirebaseConfig = () => ({

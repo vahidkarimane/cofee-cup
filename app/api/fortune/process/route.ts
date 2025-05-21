@@ -1,16 +1,14 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {auth} from '@clerk/nextjs/server';
-import {getFortune, updateFortunePrediction} from '@/lib/firebase/utils';
+import {getFortune, updateFortunePrediction} from '@/lib/supabase/utils';
 import {generateFortunePrediction} from '@/services/openai';
 import {FortuneStatus} from '@/types';
 
 export async function POST(req: NextRequest) {
 	try {
-		// Verify authentication
+		// Get user ID from authentication or use anonymous
 		const {userId} = await auth();
-		if (!userId) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		}
+		const effectiveUserId = userId || 'anonymous';
 
 		// Get request body
 		const {fortuneId} = await req.json();
@@ -26,8 +24,8 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({error: 'Fortune not found'}, {status: 404});
 		}
 
-		// Check if the fortune belongs to the authenticated user
-		if (fortune.userId !== userId) {
+		// Check if the fortune belongs to the authenticated user or anonymous user
+		if (fortune.userId !== effectiveUserId && fortune.userId !== 'anonymous') {
 			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 		}
 

@@ -2,7 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {auth} from '@clerk/nextjs/server';
 import {FortuneStatus} from '@/types';
 import {generateFortunePredictionFromBase64} from '@/services/openai';
-import {createFortune, updateFortunePrediction} from '@/lib/firebase/utils';
+import {createFortune, updateFortunePrediction} from '@/lib/supabase/utils';
 
 // Configure the API route to handle larger payloads
 export const config = {
@@ -16,11 +16,9 @@ export const config = {
 
 export async function POST(req: NextRequest) {
 	try {
-		// Verify authentication
+		// Get user ID from authentication or use anonymous
 		const {userId} = await auth();
-		if (!userId) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		}
+		const effectiveUserId = userId || 'anonymous';
 
 		// Get request body
 		const {images, name, age, intent, about} = await req.json();
@@ -42,7 +40,7 @@ export async function POST(req: NextRequest) {
 			// Store only the prediction result (without image URLs)
 			// Note: We're passing an empty array for imageUrl since we're not storing images
 			const fortuneId = await createFortune(
-				userId,
+				effectiveUserId,
 				[], // No image URLs to store
 				name,
 				age,

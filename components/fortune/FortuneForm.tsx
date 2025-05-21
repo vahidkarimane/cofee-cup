@@ -39,7 +39,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function FortuneForm() {
 	const router = useRouter();
 	const {userId} = useAuth();
-	const {images, isLoading, error, handleImageChange, uploadToFirebase, removeImage, resetImages} =
+	const {images, isLoading, error, handleImageChange, uploadToSupabase, removeImage, resetImages} =
 		useMultipleImageUpload({
 			maxSizeMB: 5,
 			acceptedTypes: ['image/jpeg', 'image/png', 'image/jpg'],
@@ -130,13 +130,14 @@ export default function FortuneForm() {
 	};
 
 	const onSubmit = async (formData: FormValues) => {
-		if (images.length === 0 || !userId) {
+		if (images.length === 0) {
 			setStatus('error');
-			setStatusMessage(
-				images.length === 0 ? 'Please upload at least one image' : 'Authentication required'
-			);
+			setStatusMessage('Please upload at least one image');
 			return;
 		}
+
+		// Use anonymous user ID if not authenticated
+		const effectiveUserId = userId || 'anonymous';
 
 		setStatus('submitting');
 		setStatusMessage('Submitting your fortune request...');
@@ -176,8 +177,8 @@ export default function FortuneForm() {
 			resetImages();
 			reset();
 
-			// Redirect to payment page
-			router.push(`/payment?fortuneId=${data.fortuneId}`);
+			// Redirect to fortune result page (bypassing payment)
+			router.push(`/fortune-result?fortuneId=${data.fortuneId}`);
 		} catch (err) {
 			console.error('Error submitting fortune:', err);
 			setStatus('error');

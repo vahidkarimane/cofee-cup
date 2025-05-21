@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {uploadImage} from '@/lib/firebase/utils';
+import {uploadImage} from '@/lib/supabase/utils';
 
 interface UseMultipleImageUploadOptions {
 	maxSizeMB?: number;
@@ -20,7 +20,7 @@ interface UseMultipleImageUploadReturn {
 	isLoading: boolean;
 	error: string | null;
 	handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-	uploadToFirebase: (userId: string) => Promise<string[]>;
+	uploadToSupabase: (userId: string) => Promise<string[]>;
 	removeImage: (index: number) => void;
 	resetImages: () => void;
 }
@@ -94,7 +94,7 @@ export function useMultipleImageUpload(
 		setError(null);
 	};
 
-	const uploadToFirebase = async (userId: string): Promise<string[]> => {
+	const uploadToSupabase = async (userId: string): Promise<string[]> => {
 		if (images.length === 0) {
 			throw new Error('No images selected');
 		}
@@ -130,7 +130,7 @@ export function useMultipleImageUpload(
 		isLoading,
 		error,
 		handleImageChange,
-		uploadToFirebase,
+		uploadToSupabase,
 		removeImage,
 		resetImages,
 	};

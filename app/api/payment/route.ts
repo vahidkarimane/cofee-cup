@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {auth} from '@clerk/nextjs/server';
 import {createPaymentIntent, getFortuneReadingPrice} from '@/services/stripe';
-import {createPayment} from '@/lib/firebase/utils';
+import {createPayment} from '@/lib/supabase/utils';
 
 export async function POST(req: NextRequest) {
 	try {
