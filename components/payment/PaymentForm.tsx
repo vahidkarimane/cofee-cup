@@ -41,6 +41,8 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 		async function createPaymentIntent() {
 			try {
 				setLoading(true);
+				console.log('Creating payment intent for fortune:', fortuneId);
+
 				const response = await fetch('/api/payment', {
 					method: 'POST',
 					headers: {
@@ -49,16 +51,19 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 					body: JSON.stringify({fortuneId}),
 				});
 
+				const data = await response.json();
+
 				if (!response.ok) {
-					throw new Error('Failed to create payment intent');
+					console.error('Payment API error:', data);
+					throw new Error(data.details || data.error || 'Failed to create payment intent');
 				}
 
-				const data = await response.json();
+				console.log('Payment intent created successfully');
 				setClientSecret(data.clientSecret);
 				setAmount(data.amount);
 			} catch (err) {
 				console.error('Error creating payment intent:', err);
-				setError(err instanceof Error ? err.message : 'An error occurred');
+				setError(err instanceof Error ? err.message : 'An error occurred with payment processing');
 			} finally {
 				setLoading(false);
 			}
