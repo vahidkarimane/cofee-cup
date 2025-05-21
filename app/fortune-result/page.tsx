@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, Suspense} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {redirect} from 'next/navigation';
 import FortuneResult from '@/components/fortune/FortuneResult';
@@ -239,7 +239,34 @@ export default function FortuneResultPage() {
 					</p>
 				</div>
 
-				<FortuneResultContent />
+				<Suspense
+					fallback={
+						<div className="flex flex-col items-center justify-center py-12">
+							<div className="mb-4">
+								<svg
+									className="h-12 w-12 animate-spin text-primary"
+									xmlns="http://www.w3.org/2000/svg"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
+									<path d="M21 12a9 9 0 1 1-6.219-8.56" />
+								</svg>
+							</div>
+							<h3 className="text-xl font-medium">Loading your fortune...</h3>
+							<p className="mt-2 text-center text-muted-foreground">
+								Please wait while we retrieve your fortune reading.
+							</p>
+						</div>
+					}
+				>
+					<FortuneResultContent />
+				</Suspense>
 			</div>
 		</div>
 	);
