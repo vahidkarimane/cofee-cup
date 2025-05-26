@@ -24,10 +24,17 @@ import {formatPrice} from '@/services/stripe';
 
 // Load Stripe outside of component render to avoid recreating Stripe object on every render
 const stripeConfig = getStripeConfig();
+console.log('[Stripe] Step 1: Initializing Stripe with config', {
+	publishableKey: stripeConfig.publishableKey
+		? `${stripeConfig.publishableKey.substring(0, 8)}...`
+		: 'undefined',
+});
 // Create Stripe promise
 const stripePromise = loadStripe(stripeConfig.publishableKey || '', {
 	stripeAccount: undefined, // Only include if using Connect
 });
+// Log promise creation
+console.log('[Stripe] Step 2: Stripe promise created');
 
 interface PaymentFormProps {
 	fortuneId: string;
@@ -82,15 +89,19 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 	useEffect(() => {
 		// Debug Stripe loading
 		if (clientSecret) {
-			console.log(
-				'[Payment] Step 6b: About to render Stripe Elements with client secret:',
-				clientSecret.substring(0, 10) + '...'
-			);
+			console.log('[Stripe] Step 3: Client secret received, about to render Elements', {
+				secretFirstChars: clientSecret.substring(0, 10) + '...',
+			});
 
 			// Check if stripePromise resolved
 			stripePromise.then(
-				() => console.log('[Payment] Step 6c: Stripe.js loaded successfully'),
-				(err) => console.error('[Payment] Error loading Stripe.js:', err)
+				(stripe) =>
+					console.log('[Stripe] Step 4: Stripe.js loaded successfully', {
+						stripeObject: !!stripe,
+						// Use type assertion to access internal property safely
+						version: (stripe as any)?._apiVersion || 'unknown',
+					}),
+				(err) => console.error('[Stripe] Error loading Stripe.js:', err)
 			);
 		}
 	}, [clientSecret]);
@@ -257,20 +268,60 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 
+	// Log when Stripe and Elements are available
+	useEffect(() => {
+		console.log('[Stripe] Step 5: CheckoutForm mounted', {
+			stripeAvailable: !!stripe,
+			elementsAvailable: !!elements,
+		});
+
+		// Add listener for payment element ready state
+		if (elements) {
+			const paymentElement = elements.getElement('payment');
+			if (paymentElement) {
+				console.log('[Stripe] Step 6: Payment Element found, setting up listeners');
+				paymentElement.on('ready', () => {
+					console.log('[Stripe] Step 7: Payment Element is ready');
+				});
+
+				paymentElement.on('change', (event) => {
+					console.log('[Stripe] Payment Element changed', {
+						empty: event.empty,
+						complete: event.complete,
+						// error is not guaranteed to be present on all events
+						hasError: 'error' in event,
+					});
+				});
+			} else {
+				console.log('[Stripe] Payment Element not found yet');
+			}
+		}
+
+		return () => {
+			console.log('[Stripe] CheckoutForm unmounting');
+		};
+	}, [stripe, elements]);
+
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		console.log('[Payment] Step 7: Form submitted');
+		console.log('[Stripe] Step 8: Form submitted');
 
 		if (!stripe || !elements) {
-			console.warn('[Payment] Warning: Stripe or elements not loaded yet');
+			console.warn('[Stripe] Warning: Form submitted but Stripe or elements not loaded yet', {
+				stripeAvailable: !!stripe,
+				elementsAvailable: !!elements,
+			});
 			return;
 		}
 
 		setIsLoading(true);
 		setMessage(null);
-		console.log('[Payment] Step 8: Confirming payment with Stripe');
+		console.log('[Stripe] Step 9: Confirming payment with Stripe', {
+			returnUrl: `${window.location.origin}/dashboard?fortuneId=${fortuneId}&payment=success`,
+			fortuneId,
+		});
 
-		const {error, paymentIntent} = await stripe.confirmPayment({
+		const result = await stripe.confirmPayment({
 			elements,
 			confirmParams: {
 				return_url: `${window.location.origin}/dashboard?fortuneId=${fortuneId}&payment=success`,
@@ -278,27 +329,46 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 			redirect: 'if_required',
 		});
 
-		console.log('[Payment] Step 9: Payment confirmation response received');
+		const {error, paymentIntent} = result;
+
+		console.log('[Stripe] Step 10: Payment confirmation response received', {
+			hasError: !!error,
+			errorType: error?.type,
+			errorMessage: error?.message,
+			paymentIntentStatus: paymentIntent?.status || 'undefined',
+			paymentIntentId: paymentIntent?.id ? `${paymentIntent.id.substring(0, 10)}...` : 'undefined',
+		});
 
 		if (error) {
-			console.error('[Payment] Payment error:', error.type, error.message);
+			console.error('[Stripe] Step 11: Payment failed with error', {
+				type: error.type,
+				message: error.message,
+			});
 			setMessage(error.message || 'An unexpected error occurred.');
 			setIsLoading(false);
 		} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-			console.log('[Payment] Step 10: Payment intent succeeded, status:', paymentIntent.status);
+			console.log('[Stripe] Step 11: Payment intent succeeded', {
+				status: paymentIntent.status,
+				id: paymentIntent.id,
+			});
 
 			try {
-				console.log('[Payment] Step 11: Retrieving stored images from localStorage');
+				console.log('[Stripe] Step 12: Retrieving stored images from localStorage', {
+					fortuneId,
+				});
 				// Get the stored images from localStorage
 				const storedImages = localStorage.getItem(`fortune_images_${fortuneId}`);
 
 				if (!storedImages) {
-					console.error('[Payment] Error: Fortune images not found in localStorage');
+					console.error('[Stripe] Error: Fortune images not found in localStorage');
 					throw new Error('Fortune images not found');
 				}
 
 				const images = JSON.parse(storedImages);
-				console.log('[Payment] Step 12: Processing fortune with payment ID:', paymentIntent.id);
+				console.log('[Stripe] Step 13: Processing fortune with payment ID', {
+					paymentId: paymentIntent.id,
+					imageCount: images.length,
+				});
 
 				// Process the fortune after successful payment
 				const processingResponse = await fetch('/api/fortune/process-paid', {
@@ -313,26 +383,26 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 					}),
 				});
 
-				console.log(
-					'[Payment] Step 13: Fortune processing response status:',
-					processingResponse.status
-				);
+				console.log('[Stripe] Step 14: Fortune processing API response received', {
+					status: processingResponse.status,
+					ok: processingResponse.ok,
+				});
 
 				if (!processingResponse.ok) {
 					const errorData = await processingResponse.json();
-					console.error('[Payment] Fortune processing error:', errorData);
+					console.error('[Stripe] Fortune processing error:', errorData);
 					throw new Error(errorData.details || errorData.error || 'Failed to process fortune');
 				}
 
-				console.log('[Payment] Step 14: Fortune processed successfully, cleaning up localStorage');
+				console.log('[Stripe] Step 15: Fortune processed successfully, cleaning up localStorage');
 				// Clean up the stored images
 				localStorage.removeItem(`fortune_images_${fortuneId}`);
 
 				// Redirect to fortune result page
-				console.log('[Payment] Step 15: Redirecting to fortune result page');
+				console.log('[Stripe] Step 16: Redirecting to fortune result page');
 				router.push(`/fortune-result?fortuneId=${fortuneId}`);
 			} catch (processError) {
-				console.error('[Payment] Fortune processing error:', processError);
+				console.error('[Stripe] Fortune processing error:', processError);
 				setMessage(
 					processError instanceof Error
 						? processError.message
@@ -341,10 +411,9 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 				setIsLoading(false);
 			}
 		} else {
-			console.warn(
-				'[Payment] Payment status unexpected or undefined:',
-				paymentIntent ? paymentIntent.status : 'undefined'
-			);
+			console.warn('[Stripe] Step 11: Payment status unexpected or undefined', {
+				status: paymentIntent ? paymentIntent.status : 'undefined',
+			});
 			setMessage('An unexpected error occurred.');
 			setIsLoading(false);
 		}
