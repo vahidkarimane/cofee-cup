@@ -23,6 +23,15 @@ export async function createPaymentIntent(
 	metadata: Record<string, string> = {}
 ) {
 	try {
+		// Validate amount to prevent sending 0 to Stripe
+		if (!amount || amount <= 0) {
+			console.error(`[Stripe] Invalid payment amount: ${amount}cents`);
+			throw new Error('Payment amount must be greater than 0');
+		}
+
+		// Log the amount being sent to Stripe
+		console.log(`[Stripe] Creating payment intent with amount: ${amount} cents (${currency})`);
+
 		const paymentIntent = await stripe.paymentIntents.create({
 			amount,
 			currency,
@@ -32,13 +41,20 @@ export async function createPaymentIntent(
 			},
 		});
 
+		if (!paymentIntent.client_secret) {
+			console.error('[Stripe] Payment intent created but missing client secret');
+			throw new Error('Payment intent missing client secret');
+		}
+
+		console.log(`[Stripe] Successfully created payment intent: ${paymentIntent.id}`);
+
 		return {
 			clientSecret: paymentIntent.client_secret,
 			id: paymentIntent.id,
 		};
 	} catch (error) {
 		console.error('Error creating payment intent:', error);
-		throw new Error('Failed to create payment intent');
+		throw new Error(error instanceof Error ? error.message : 'Failed to create payment intent');
 	}
 }
 

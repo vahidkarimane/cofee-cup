@@ -3,6 +3,9 @@ import {auth} from '@clerk/nextjs/server';
 import {createPaymentIntent, getFortuneReadingPrice} from '@/services/stripe';
 import {createPayment} from '@/lib/supabase/utils';
 
+// Ensure route is not cached and every request hits the function
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
 	try {
 		console.log('[Payment API] Step 1: Payment request received');
@@ -36,6 +39,13 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({error: 'Failed to get price'}, {status: 500});
 		}
 
+		// Verify amount is not zero
+		if (!amount || amount <= 0) {
+			console.error('[Payment API] Error: Invalid price amount', amount);
+			return NextResponse.json({error: 'Invalid payment amount'}, {status: 400});
+		}
+		console.log('[Payment API] Step 5b: Verified amount is valid:', amount);
+
 		// Create a payment intent
 		let paymentIntent;
 		try {
@@ -50,19 +60,20 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({error: 'Failed to create Stripe payment intent'}, {status: 500});
 		}
 
-		// Create a payment record in Supabase
-		let paymentId;
-		try {
-			console.log('[Payment API] Step 8: Creating payment record in Supabase');
-			paymentId = await createPayment(userId, fortuneId, amount, 'usd', paymentIntent.id);
-			console.log('[Payment API] Step 9: Payment record created:', paymentId);
-		} catch (dbError) {
-			console.error('[Payment API] Database error creating payment record:', dbError);
-			return NextResponse.json({error: 'Failed to create payment record'}, {status: 500});
+		// Verify client secret exists
+		if (!paymentIntent.clientSecret) {
+			console.error('[Payment API] Error: Missing client secret from Stripe');
+			return NextResponse.json({error: 'Failed to create payment'}, {status: 500});
 		}
 
+		// Store payment intent ID for later database record creation
+		// We'll create the actual database record after payment success via webhook
+		// This prevents duplicate records from being created on page refreshes
+		const paymentId = `pending_${paymentIntent.id}`;
+		console.log('[Payment API] Step 8: Using temporary payment ID:', paymentId);
+
 		// Return the client secret and payment ID
-		console.log('[Payment API] Step 10: Returning client secret and payment details to client');
+		console.log('[Payment API] Step 9: Returning client secret and payment details to client');
 		return NextResponse.json({
 			clientSecret: paymentIntent.clientSecret,
 			paymentId,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {useRouter} from 'next/navigation';
 import {loadStripe} from '@stripe/stripe-js';
 import {
@@ -29,6 +29,12 @@ console.log('[Stripe] Step 1: Initializing Stripe with config', {
 		? `${stripeConfig.publishableKey.substring(0, 8)}...`
 		: 'undefined',
 });
+
+// Check if Stripe is configured properly
+if (!stripeConfig.publishableKey) {
+	console.error('[Stripe] Error: Missing Stripe publishable key');
+}
+
 // Create Stripe promise
 const stripePromise = loadStripe(stripeConfig.publishableKey || '', {
 	stripeAccount: undefined, // Only include if using Connect
@@ -45,6 +51,52 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 	const [amount, setAmount] = useState<number>(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [hasRequested, setHasRequested] = useState(false);
+	const [stripeObj, setStripeObj] = useState<any>(null);
+	const [stripeElementsReady, setStripeElementsReady] = useState(false);
+
+	// Debug state
+	console.log('[Payment] Current state:', {
+		clientSecret: clientSecret ? 'exists' : 'null',
+		amount,
+		loading,
+		error: error || 'null',
+		hasRequested,
+		stripeObj: stripeObj ? 'loaded' : 'null',
+		stripeElementsReady,
+	});
+
+	// Check for missing Stripe key
+	useEffect(() => {
+		if (!stripeConfig.publishableKey) {
+			setError('Stripe is not configured properly. Please contact support.');
+			setLoading(false);
+		}
+	}, []);
+
+	// Wait for Stripe to load
+	useEffect(() => {
+		console.log('[Stripe] Attempting to load Stripe.js');
+		stripePromise.then(
+			(stripe) => {
+				console.log('[Stripe] Stripe.js loaded successfully', {stripeObject: !!stripe});
+				if (stripe) {
+					setStripeObj(stripe);
+				} else {
+					console.error('[Stripe] Stripe.js loaded but returned null');
+					setError(
+						'Failed to initialize payment system. Please check your connection and try again.'
+					);
+					setLoading(false);
+				}
+			},
+			(err) => {
+				console.error('[Stripe] Failed to load Stripe.js:', err);
+				setError('Failed to load payment system. Please try again or contact support.');
+				setLoading(false);
+			}
+		);
+	}, []);
 
 	useEffect(() => {
 		// Prevent multiple payment intent creation requests
@@ -52,11 +104,14 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 
 		// Create a payment intent as soon as the page loads
 		async function createPaymentIntent() {
-			// Return early if we already have a client secret
-			if (clientSecret) {
-				console.log('[Payment] Skipping payment intent creation - already have client secret');
+			// Only create payment intent once
+			if (hasRequested) {
+				console.log('[Payment] Skipping payment intent creation - request already sent');
 				return;
 			}
+
+			// Mark as requested immediately to prevent concurrent requests
+			setHasRequested(true);
 
 			try {
 				console.log('[Payment] Step 1: Creating payment intent for fortune:', fortuneId);
@@ -79,6 +134,11 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 				if (!response.ok) {
 					console.error('[Payment] Error: API returned error status', data);
 					throw new Error(data.details || data.error || 'Failed to create payment intent');
+				}
+
+				if (!data.clientSecret) {
+					console.error('[Payment] Error: Missing client secret in API response');
+					throw new Error('Payment system error: Missing client secret');
 				}
 
 				console.log('[Payment] Step 4: Payment intent created successfully, ID:', data.paymentId);
@@ -108,7 +168,7 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 		return () => {
 			isMounted = false;
 		};
-	}, [fortuneId, clientSecret]); // Removed 'loading' from dependencies
+	}, [fortuneId, hasRequested]);
 
 	useEffect(() => {
 		// Debug Stripe loading
@@ -143,6 +203,36 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 				},
 			}
 		: {appearance: {theme: 'stripe' as const}};
+
+	// Update loading state when we have everything we need
+	useEffect(() => {
+		if (clientSecret && stripeObj) {
+			console.log('[Payment] Both clientSecret and stripeObj are ready, ending loading state');
+			// Only set loading to false when both clientSecret and stripeObj are available
+			setLoading(false);
+		}
+	}, [clientSecret, stripeObj]);
+
+	// Set a timeout to forcibly show elements if loading takes too long
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			if (clientSecret && !stripeElementsReady) {
+				console.log('[Payment] Forcing display of Stripe Elements after timeout');
+				setLoading(false);
+				setStripeElementsReady(true);
+			}
+		}, 3000); // 3 seconds timeout
+
+		return () => clearTimeout(timer);
+	}, [clientSecret, stripeElementsReady]);
+
+	// Monitor when Elements should be ready
+	useEffect(() => {
+		if (clientSecret && stripeObj && !loading) {
+			console.log('[Payment] Payment form should be ready to display Stripe Elements');
+			setStripeElementsReady(true);
+		}
+	}, [clientSecret, stripeObj, loading]);
 
 	if (loading) {
 		return (
@@ -192,6 +282,62 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 
 	return (
 		<div className="w-full max-w-md mx-auto">
+			{/* Debug info for development only */}
+			<div className="mb-4 p-2 text-xs bg-muted/30 rounded-md">
+				<details>
+					<summary className="cursor-pointer text-muted-foreground">
+						Debug info (click to expand)
+					</summary>
+					<pre className="mt-2 whitespace-pre-wrap">
+						Client Secret: {clientSecret ? '✅' : '❌'}
+						{'\n'}
+						Stripe Object: {stripeObj ? '✅' : '❌'}
+						{'\n'}
+						Amount: {amount} cents{'\n'}
+						Elements Ready: {stripeElementsReady ? 'true' : 'false'}
+						{'\n'}
+						Loading: {loading ? 'true' : 'false'}
+						{'\n'}
+					</pre>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						className="mt-2 text-xs h-7"
+						onClick={() => {
+							setStripeElementsReady(true);
+							setLoading(false);
+						}}
+					>
+						Force Show Elements
+					</Button>
+				</details>
+			</div>
+
+			{!stripeElementsReady && !error && clientSecret && (
+				<Card className="w-full max-w-md mx-auto mb-4">
+					<CardContent className="flex items-center justify-center p-6">
+						<div className="text-center">
+							<svg
+								className="mx-auto h-6 w-6 animate-spin text-primary mb-2"
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<path d="M21 12a9 9 0 1 1-6.219-8.56" />
+							</svg>
+							<p className="text-sm text-muted-foreground">Initializing payment form...</p>
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
 			{clientSecret && (
 				<div className="stripe-elements-container" style={{minHeight: '400px'}}>
 					{/* Add explicit styling to ensure Stripe elements are visible */}
@@ -239,23 +385,75 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 // Error boundary component to catch rendering errors in Stripe Elements
 class ErrorBoundary extends React.Component<
 	{children: React.ReactNode},
-	{hasError: boolean; error: any}
+	{hasError: boolean; error: any; isRedirecting: boolean}
 > {
 	constructor(props: {children: React.ReactNode}) {
 		super(props);
-		this.state = {hasError: false, error: null};
+		this.state = {hasError: false, error: null, isRedirecting: false};
 	}
 
 	static getDerivedStateFromError(error: any) {
-		return {hasError: true, error};
+		// Check if this is a redirect error
+		const errorString = error?.toString() || '';
+		const isRedirectError = errorString.includes('NEXT_REDIRECT');
+
+		return {
+			hasError: true,
+			error,
+			isRedirecting: isRedirectError,
+		};
 	}
 
 	componentDidCatch(error: any, errorInfo: any) {
 		console.error('[Payment] Stripe Elements rendering error:', error, errorInfo);
+
+		// Handle NEXT_REDIRECT error - this happens during payment redirects
+		// It's actually part of the normal flow for some payment methods
+		const errorString = error?.toString() || '';
+		if (errorString.includes('NEXT_REDIRECT')) {
+			console.log('[Payment] Detected NEXT_REDIRECT in error, handling payment redirect');
+
+			// Set a small delay before redirecting to dashboard to allow React to complete
+			setTimeout(() => {
+				// Get the fortuneId from URL
+				const fortuneId = new URLSearchParams(window.location.search).get('fortuneId');
+				console.log('[Payment] Redirecting to dashboard for fortuneId:', fortuneId);
+				window.location.href = `/dashboard?fortuneId=${fortuneId || ''}&payment=success`;
+			}, 1000);
+		}
 	}
 
 	render() {
 		if (this.state.hasError) {
+			// If this is a redirect error, show redirecting message
+			if (this.state.isRedirecting) {
+				return (
+					<Card className="w-full max-w-md mx-auto">
+						<CardHeader>
+							<CardTitle>Processing Payment</CardTitle>
+							<CardDescription>Please wait while we redirect you...</CardDescription>
+						</CardHeader>
+						<CardContent className="flex justify-center py-8">
+							<svg
+								className="h-8 w-8 animate-spin text-primary"
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<path d="M21 12a9 9 0 1 1-6.219-8.56" />
+							</svg>
+						</CardContent>
+					</Card>
+				);
+			}
+
+			// For other errors, show the error message
 			return (
 				<Card className="w-full max-w-md mx-auto">
 					<CardHeader>
@@ -291,6 +489,7 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
+	const elementMountedRef = useRef(false);
 
 	// Log when Stripe and Elements are available
 	useEffect(() => {
@@ -299,10 +498,13 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 			elementsAvailable: !!elements,
 		});
 
-		// Add listener for payment element ready state
-		if (elements) {
+		// Retry mechanism for payment element
+		const checkPaymentElement = () => {
+			if (!elements) return;
+
 			const paymentElement = elements.getElement('payment');
 			if (paymentElement) {
+				elementMountedRef.current = true;
 				console.log('[Stripe] Step 6: Payment Element found, setting up listeners');
 				paymentElement.on('ready', () => {
 					console.log('[Stripe] Step 7: Payment Element is ready');
@@ -312,13 +514,17 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 					console.log('[Stripe] Payment Element changed', {
 						empty: event.empty,
 						complete: event.complete,
-						// error is not guaranteed to be present on all events
 						hasError: 'error' in event,
 					});
 				});
-			} else {
-				console.log('[Stripe] Payment Element not found yet');
+			} else if (!elementMountedRef.current) {
+				console.log('[Stripe] Payment Element not found yet, will retry');
+				setTimeout(checkPaymentElement, 500);
 			}
+		};
+
+		if (elements) {
+			checkPaymentElement();
 		}
 
 		return () => {
@@ -346,13 +552,13 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 		});
 
 		try {
-			// Set redirect to always to ensure the browser is redirected immediately after payment
+			// Use default redirect behavior for better experience in production
 			await stripe.confirmPayment({
 				elements,
 				confirmParams: {
 					return_url: `${window.location.origin}/dashboard?fortuneId=${fortuneId}&payment=success`,
 				},
-				redirect: 'always',
+				redirect: 'if_required',
 			});
 
 			// Any code here should not execute due to the redirect
