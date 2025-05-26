@@ -41,7 +41,7 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 		async function createPaymentIntent() {
 			try {
 				setLoading(true);
-				console.log('Creating payment intent for fortune:', fortuneId);
+				console.log('[Payment] Step 1: Creating payment intent for fortune:', fortuneId);
 
 				const response = await fetch('/api/payment', {
 					method: 'POST',
@@ -51,18 +51,22 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 					body: JSON.stringify({fortuneId}),
 				});
 
+				console.log('[Payment] Step 2: API response received, status:', response.status);
 				const data = await response.json();
+				console.log('[Payment] Step 3: Response data parsed');
 
 				if (!response.ok) {
-					console.error('Payment API error:', data);
+					console.error('[Payment] Error: API returned error status', data);
 					throw new Error(data.details || data.error || 'Failed to create payment intent');
 				}
 
-				console.log('Payment intent created successfully');
+				console.log('[Payment] Step 4: Payment intent created successfully, ID:', data.paymentId);
+				console.log('[Payment] Step 5: Setting client secret and amount');
 				setClientSecret(data.clientSecret);
 				setAmount(data.amount);
+				console.log('[Payment] Step 6: Payment form ready to load Stripe elements');
 			} catch (err) {
-				console.error('Error creating payment intent:', err);
+				console.error('[Payment] Error creating payment intent:', err);
 				setError(err instanceof Error ? err.message : 'An error occurred with payment processing');
 			} finally {
 				setLoading(false);
@@ -157,14 +161,16 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		console.log('[Payment] Step 7: Form submitted');
 
 		if (!stripe || !elements) {
-			// Stripe.js hasn't yet loaded.
+			console.warn('[Payment] Warning: Stripe or elements not loaded yet');
 			return;
 		}
 
 		setIsLoading(true);
 		setMessage(null);
+		console.log('[Payment] Step 8: Confirming payment with Stripe');
 
 		const {error, paymentIntent} = await stripe.confirmPayment({
 			elements,
@@ -174,20 +180,27 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 			redirect: 'if_required',
 		});
 
+		console.log('[Payment] Step 9: Payment confirmation response received');
+
 		if (error) {
-			// Show error to your customer
+			console.error('[Payment] Payment error:', error.type, error.message);
 			setMessage(error.message || 'An unexpected error occurred.');
 			setIsLoading(false);
 		} else if (paymentIntent && paymentIntent.status === 'succeeded') {
+			console.log('[Payment] Step 10: Payment intent succeeded, status:', paymentIntent.status);
+
 			try {
+				console.log('[Payment] Step 11: Retrieving stored images from localStorage');
 				// Get the stored images from localStorage
 				const storedImages = localStorage.getItem(`fortune_images_${fortuneId}`);
 
 				if (!storedImages) {
+					console.error('[Payment] Error: Fortune images not found in localStorage');
 					throw new Error('Fortune images not found');
 				}
 
 				const images = JSON.parse(storedImages);
+				console.log('[Payment] Step 12: Processing fortune with payment ID:', paymentIntent.id);
 
 				// Process the fortune after successful payment
 				const processingResponse = await fetch('/api/fortune/process-paid', {
@@ -202,18 +215,26 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 					}),
 				});
 
+				console.log(
+					'[Payment] Step 13: Fortune processing response status:',
+					processingResponse.status
+				);
+
 				if (!processingResponse.ok) {
 					const errorData = await processingResponse.json();
+					console.error('[Payment] Fortune processing error:', errorData);
 					throw new Error(errorData.details || errorData.error || 'Failed to process fortune');
 				}
 
+				console.log('[Payment] Step 14: Fortune processed successfully, cleaning up localStorage');
 				// Clean up the stored images
 				localStorage.removeItem(`fortune_images_${fortuneId}`);
 
 				// Redirect to fortune result page
+				console.log('[Payment] Step 15: Redirecting to fortune result page');
 				router.push(`/fortune-result?fortuneId=${fortuneId}`);
 			} catch (processError) {
-				console.error('Error processing fortune:', processError);
+				console.error('[Payment] Fortune processing error:', processError);
 				setMessage(
 					processError instanceof Error
 						? processError.message
@@ -222,6 +243,10 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 				setIsLoading(false);
 			}
 		} else {
+			console.warn(
+				'[Payment] Payment status unexpected or undefined:',
+				paymentIntent ? paymentIntent.status : 'undefined'
+			);
 			setMessage('An unexpected error occurred.');
 			setIsLoading(false);
 		}

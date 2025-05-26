@@ -5,60 +5,71 @@ import {createPayment} from '@/lib/supabase/utils';
 
 export async function POST(req: NextRequest) {
 	try {
+		console.log('[Payment API] Step 1: Payment request received');
+
 		// Verify authentication
 		const {userId} = await auth();
 		if (!userId) {
+			console.error('[Payment API] Error: Authentication failed, no userId found');
 			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 		}
 
+		console.log('[Payment API] Step 2: Authentication successful, userId:', userId);
+
 		// Get request body
 		const {fortuneId} = await req.json();
+		console.log('[Payment API] Step 3: Request body parsed, fortuneId:', fortuneId);
 
 		if (!fortuneId) {
+			console.error('[Payment API] Error: Missing fortuneId in request');
 			return NextResponse.json({error: 'Fortune ID is required'}, {status: 400});
 		}
 
 		// Get the price for a fortune reading
 		let amount;
 		try {
+			console.log('[Payment API] Step 4: Getting fortune reading price');
 			amount = await getFortuneReadingPrice();
-			console.log('Fortune reading price:', amount);
+			console.log('[Payment API] Step 5: Fortune reading price retrieved:', amount);
 		} catch (priceError) {
-			console.error('Error getting fortune reading price:', priceError);
+			console.error('[Payment API] Error getting fortune reading price:', priceError);
 			return NextResponse.json({error: 'Failed to get price'}, {status: 500});
 		}
 
 		// Create a payment intent
 		let paymentIntent;
 		try {
+			console.log('[Payment API] Step 6: Creating Stripe payment intent');
 			paymentIntent = await createPaymentIntent(amount, 'usd', {
 				userId,
 				fortuneId,
 			});
-			console.log('Payment intent created:', paymentIntent.id);
+			console.log('[Payment API] Step 7: Payment intent created:', paymentIntent.id);
 		} catch (stripeError) {
-			console.error('Stripe error creating payment intent:', stripeError);
+			console.error('[Payment API] Stripe error creating payment intent:', stripeError);
 			return NextResponse.json({error: 'Failed to create Stripe payment intent'}, {status: 500});
 		}
 
 		// Create a payment record in Supabase
 		let paymentId;
 		try {
+			console.log('[Payment API] Step 8: Creating payment record in Supabase');
 			paymentId = await createPayment(userId, fortuneId, amount, 'usd', paymentIntent.id);
-			console.log('Payment record created:', paymentId);
+			console.log('[Payment API] Step 9: Payment record created:', paymentId);
 		} catch (dbError) {
-			console.error('Database error creating payment record:', dbError);
+			console.error('[Payment API] Database error creating payment record:', dbError);
 			return NextResponse.json({error: 'Failed to create payment record'}, {status: 500});
 		}
 
 		// Return the client secret and payment ID
+		console.log('[Payment API] Step 10: Returning client secret and payment details to client');
 		return NextResponse.json({
 			clientSecret: paymentIntent.clientSecret,
 			paymentId,
 			amount,
 		});
 	} catch (error) {
-		console.error('Error creating payment:', error);
+		console.error('[Payment API] Unhandled error in payment processing:', error);
 		return NextResponse.json(
 			{
 				error: 'Failed to process payment request',

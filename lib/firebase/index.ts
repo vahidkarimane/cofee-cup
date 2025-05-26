@@ -1,16 +1,13 @@
-// Re-export Firebase client configuration
+// This file is kept for backward compatibility
+// The application has been migrated from Firebase to Supabase
+// Do not load any Firebase modules from here
+
 export * from './config';
-
-// Re-export Firebase admin configuration
 export * from './admin';
-
-// Re-export Firebase utility functions
 export * from './utils';
-
-// Re-export Firebase schema
 export * from './schema';
 
-// Export collection names
+// Collection names (kept for reference only)
 export const COLLECTIONS = {
 	FORTUNES: 'fortunes',
 	USERS: 'users',

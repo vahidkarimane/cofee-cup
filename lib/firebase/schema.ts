@@ -1,5 +1,24 @@
-import {Timestamp} from 'firebase/firestore';
 import {FortuneStatus, PaymentStatus} from '@/types';
+
+// Mock Timestamp type to replace Firebase's Timestamp
+export class Timestamp {
+	seconds: number;
+	nanoseconds: number;
+
+	constructor(seconds: number, nanoseconds: number) {
+		this.seconds = seconds;
+		this.nanoseconds = nanoseconds;
+	}
+
+	static now(): Timestamp {
+		const now = new Date();
+		return new Timestamp(Math.floor(now.getTime() / 1000), 0);
+	}
+
+	toDate(): Date {
+		return new Date(this.seconds * 1000);
+	}
+}
 
 /**
  * This file defines the Firestore database schema for the Coffee Cup Fortune app.
