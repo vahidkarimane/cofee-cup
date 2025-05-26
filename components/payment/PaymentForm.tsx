@@ -24,7 +24,11 @@ import {formatPrice} from '@/services/stripe';
 
 // Load Stripe outside of component render to avoid recreating Stripe object on every render
 const stripeConfig = getStripeConfig();
-const stripePromise = loadStripe(stripeConfig.publishableKey || '');
+// Create Stripe promise with explicit API version
+const stripePromise = loadStripe(stripeConfig.publishableKey || '', {
+	apiVersion: '2025-04-30',
+	stripeAccount: undefined, // Only include if using Connect
+});
 
 interface PaymentFormProps {
 	fortuneId: string;
@@ -75,6 +79,22 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 
 		createPaymentIntent();
 	}, [fortuneId]);
+
+	useEffect(() => {
+		// Debug Stripe loading
+		if (clientSecret) {
+			console.log(
+				'[Payment] Step 6b: About to render Stripe Elements with client secret:',
+				clientSecret.substring(0, 10) + '...'
+			);
+
+			// Check if stripePromise resolved
+			stripePromise.then(
+				() => console.log('[Payment] Step 6c: Stripe.js loaded successfully'),
+				(err) => console.error('[Payment] Error loading Stripe.js:', err)
+			);
+		}
+	}, [clientSecret]);
 
 	const options = clientSecret
 		? {
@@ -139,12 +159,91 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 	return (
 		<div className="w-full max-w-md mx-auto">
 			{clientSecret && (
-				<Elements options={options} stripe={stripePromise}>
-					<CheckoutForm amount={amount} fortuneId={fortuneId} />
-				</Elements>
+				<div className="stripe-elements-container" style={{minHeight: '400px'}}>
+					{/* Add explicit styling to ensure Stripe elements are visible */}
+					<style jsx global>{`
+						.StripeElement {
+							width: 100%;
+							padding: 12px;
+							border: 1px solid #e2e8f0;
+							border-radius: 4px;
+							background-color: white;
+							min-height: 40px;
+							box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+							transition: box-shadow 150ms ease;
+						}
+						.StripeElement--focus {
+							box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+						}
+						.StripeElement--invalid {
+							border-color: #fa755a;
+						}
+						.stripe-elements-container iframe {
+							opacity: 1 !important;
+							height: auto !important;
+							min-height: 40px !important;
+						}
+					`}</style>
+					<Elements
+						options={{
+							...options,
+							loader: 'always',
+							locale: 'en',
+						}}
+						stripe={stripePromise}
+					>
+						<ErrorBoundary>
+							<CheckoutForm amount={amount} fortuneId={fortuneId} />
+						</ErrorBoundary>
+					</Elements>
+				</div>
 			)}
 		</div>
 	);
+}
+
+// Error boundary component to catch rendering errors in Stripe Elements
+class ErrorBoundary extends React.Component<
+	{children: React.ReactNode},
+	{hasError: boolean; error: any}
+> {
+	constructor(props: {children: React.ReactNode}) {
+		super(props);
+		this.state = {hasError: false, error: null};
+	}
+
+	static getDerivedStateFromError(error: any) {
+		return {hasError: true, error};
+	}
+
+	componentDidCatch(error: any, errorInfo: any) {
+		console.error('[Payment] Stripe Elements rendering error:', error, errorInfo);
+	}
+
+	render() {
+		if (this.state.hasError) {
+			return (
+				<Card className="w-full max-w-md mx-auto">
+					<CardHeader>
+						<CardTitle>Payment Form Error</CardTitle>
+						<CardDescription>There was an error loading the payment form.</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+							{this.state.error?.toString() || 'An unexpected error occurred loading Stripe.'}
+						</div>
+					</CardContent>
+					<CardFooter>
+						<Button onClick={() => window.location.reload()} className="w-full">
+							Try Again
+						</Button>
+					</CardFooter>
+				</Card>
+			);
+		}
+
+		return this.props.children;
+	}
 }
 
 interface CheckoutFormProps {

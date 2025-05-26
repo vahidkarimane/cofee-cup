@@ -5,9 +5,9 @@ import {getStripeConfig} from '@/lib/env';
 
 // Initialize Stripe with the secret key
 const stripeConfig = getStripeConfig();
-// @ts-ignore - Using a valid API version
+// Using the latest API version
 const stripe = new Stripe(stripeConfig.secretKey || '', {
-	apiVersion: '2023-10-16' as any, // Use a current API version
+	apiVersion: '2025-04-30.basil' as any, // Latest API version to match frontend
 });
 
 /**
