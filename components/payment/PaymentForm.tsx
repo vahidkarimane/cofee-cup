@@ -52,11 +52,9 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 
 		// Create a payment intent as soon as the page loads
 		async function createPaymentIntent() {
-			// Return early if we already have a client secret or we're not in a loading state
-			if (clientSecret || !loading) {
-				console.log(
-					'[Payment] Skipping payment intent creation - already have client secret or not loading'
-				);
+			// Return early if we already have a client secret
+			if (clientSecret) {
+				console.log('[Payment] Skipping payment intent creation - already have client secret');
 				return;
 			}
 
@@ -110,7 +108,7 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 		return () => {
 			isMounted = false;
 		};
-	}, [fortuneId, clientSecret, loading]);
+	}, [fortuneId, clientSecret]); // Removed 'loading' from dependencies
 
 	useEffect(() => {
 		// Debug Stripe loading
