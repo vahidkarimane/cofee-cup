@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {uploadImage} from '@/lib/firebase/utils';
+import {uploadImage} from '@/lib/supabase/utils';
 
 interface UseImageUploadOptions {
 	maxSizeMB?: number;

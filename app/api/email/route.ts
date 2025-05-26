@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {auth, currentUser} from '@clerk/nextjs/server';
 import {sendFortuneEmail} from '@/services/email';
-import {getFortune} from '@/lib/firebase/utils';
+import {getFortune} from '@/lib/supabase/utils';
 import {FortuneStatus} from '@/types';
 
 export async function POST(req: NextRequest) {
