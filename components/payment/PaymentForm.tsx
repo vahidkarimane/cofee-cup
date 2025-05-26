@@ -47,10 +47,20 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		// Prevent multiple payment intent creation requests
+		let isMounted = true;
+
 		// Create a payment intent as soon as the page loads
 		async function createPaymentIntent() {
+			// Return early if we already have a client secret or we're not in a loading state
+			if (clientSecret || !loading) {
+				console.log(
+					'[Payment] Skipping payment intent creation - already have client secret or not loading'
+				);
+				return;
+			}
+
 			try {
-				setLoading(true);
 				console.log('[Payment] Step 1: Creating payment intent for fortune:', fortuneId);
 
 				const response = await fetch('/api/payment', {
@@ -60,6 +70,9 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 					},
 					body: JSON.stringify({fortuneId}),
 				});
+
+				// If component has unmounted, don't continue
+				if (!isMounted) return;
 
 				console.log('[Payment] Step 2: API response received, status:', response.status);
 				const data = await response.json();
@@ -76,15 +89,28 @@ export default function PaymentFormWrapper({fortuneId}: PaymentFormProps) {
 				setAmount(data.amount);
 				console.log('[Payment] Step 6: Payment form ready to load Stripe elements');
 			} catch (err) {
-				console.error('[Payment] Error creating payment intent:', err);
-				setError(err instanceof Error ? err.message : 'An error occurred with payment processing');
+				// Only set error if component is still mounted
+				if (isMounted) {
+					console.error('[Payment] Error creating payment intent:', err);
+					setError(
+						err instanceof Error ? err.message : 'An error occurred with payment processing'
+					);
+				}
 			} finally {
-				setLoading(false);
+				// Only update loading state if component is still mounted
+				if (isMounted) {
+					setLoading(false);
+				}
 			}
 		}
 
 		createPaymentIntent();
-	}, [fortuneId]);
+
+		// Cleanup function to handle component unmounting
+		return () => {
+			isMounted = false;
+		};
+	}, [fortuneId, clientSecret, loading]);
 
 	useEffect(() => {
 		// Debug Stripe loading
@@ -321,102 +347,34 @@ function CheckoutForm({amount, fortuneId}: CheckoutFormProps) {
 			fortuneId,
 		});
 
-		const result = await stripe.confirmPayment({
-			elements,
-			confirmParams: {
-				return_url: `${window.location.origin}/dashboard?fortuneId=${fortuneId}&payment=success`,
-			},
-			redirect: 'if_required',
-		});
-
-		const {error, paymentIntent} = result;
-
-		console.log('[Stripe] Step 10: Payment confirmation response received', {
-			hasError: !!error,
-			errorType: error?.type,
-			errorMessage: error?.message,
-			paymentIntentStatus: paymentIntent?.status || 'undefined',
-			paymentIntentId: paymentIntent?.id ? `${paymentIntent.id.substring(0, 10)}...` : 'undefined',
-		});
-
-		if (error) {
-			console.error('[Stripe] Step 11: Payment failed with error', {
-				type: error.type,
-				message: error.message,
+		try {
+			// Set redirect to always to ensure the browser is redirected immediately after payment
+			await stripe.confirmPayment({
+				elements,
+				confirmParams: {
+					return_url: `${window.location.origin}/dashboard?fortuneId=${fortuneId}&payment=success`,
+				},
+				redirect: 'always',
 			});
-			setMessage(error.message || 'An unexpected error occurred.');
+
+			// Any code here should not execute due to the redirect
+			console.error('[Stripe] Redirect not triggered, this is unexpected');
+
+			// Handle non-redirect case as error
+			setMessage(
+				'Payment system error: Expected redirect did not occur. Please try again or contact support.'
+			);
 			setIsLoading(false);
-		} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-			console.log('[Stripe] Step 11: Payment intent succeeded', {
-				status: paymentIntent.status,
-				id: paymentIntent.id,
-			});
-
-			try {
-				console.log('[Stripe] Step 12: Retrieving stored images from localStorage', {
-					fortuneId,
-				});
-				// Get the stored images from localStorage
-				const storedImages = localStorage.getItem(`fortune_images_${fortuneId}`);
-
-				if (!storedImages) {
-					console.error('[Stripe] Error: Fortune images not found in localStorage');
-					throw new Error('Fortune images not found');
-				}
-
-				const images = JSON.parse(storedImages);
-				console.log('[Stripe] Step 13: Processing fortune with payment ID', {
-					paymentId: paymentIntent.id,
-					imageCount: images.length,
-				});
-
-				// Process the fortune after successful payment
-				const processingResponse = await fetch('/api/fortune/process-paid', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						fortuneId,
-						paymentIntentId: paymentIntent.id,
-						images,
-					}),
-				});
-
-				console.log('[Stripe] Step 14: Fortune processing API response received', {
-					status: processingResponse.status,
-					ok: processingResponse.ok,
-				});
-
-				if (!processingResponse.ok) {
-					const errorData = await processingResponse.json();
-					console.error('[Stripe] Fortune processing error:', errorData);
-					throw new Error(errorData.details || errorData.error || 'Failed to process fortune');
-				}
-
-				console.log('[Stripe] Step 15: Fortune processed successfully, cleaning up localStorage');
-				// Clean up the stored images
-				localStorage.removeItem(`fortune_images_${fortuneId}`);
-
-				// Redirect to fortune result page
-				console.log('[Stripe] Step 16: Redirecting to fortune result page');
-				router.push(`/fortune-result?fortuneId=${fortuneId}`);
-			} catch (processError) {
-				console.error('[Stripe] Fortune processing error:', processError);
-				setMessage(
-					processError instanceof Error
-						? processError.message
-						: 'Payment succeeded but fortune processing failed. Please contact support.'
-				);
-				setIsLoading(false);
-			}
-		} else {
-			console.warn('[Stripe] Step 11: Payment status unexpected or undefined', {
-				status: paymentIntent ? paymentIntent.status : 'undefined',
-			});
-			setMessage('An unexpected error occurred.');
+		} catch (confirmError) {
+			console.error('[Stripe] Error during payment confirmation:', confirmError);
+			setMessage('Payment confirmation error. Please try again.');
 			setIsLoading(false);
 		}
+
+		// This code should not be reached due to redirect or catch clause above
+		console.error(
+			'[Stripe] Code execution continued after payment confirmation, this is unexpected'
+		);
 	};
 
 	return (
