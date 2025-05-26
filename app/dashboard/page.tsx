@@ -7,7 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import FortuneResult from '@/components/fortune/FortuneResult';
 import {Fortune, FortuneStatus, PaymentStatus} from '@/types';
-import {getUserFortunes, getFortune, updatePaymentStatus} from '@/lib/firebase/utils';
+import {getUserFortunes, getFortune, updatePaymentStatus, getPayment} from '@/lib/supabase/utils';
 import {useAuth} from '@clerk/nextjs';
 import Link from 'next/link';
 
@@ -29,8 +29,11 @@ export default function DashboardPage() {
 		async function handlePaymentSuccess() {
 			if (paymentStatus === 'success' && fortuneId && userId) {
 				try {
-					// Update payment status in Firebase
-					await updatePaymentStatus(fortuneId, PaymentStatus.SUCCEEDED);
+					// Update payment status in Supabase
+					const fortune = await getFortune(fortuneId);
+					if (fortune && fortune.paymentId) {
+						await updatePaymentStatus(fortune.paymentId, PaymentStatus.SUCCEEDED);
+					}
 
 					// Clear the payment status from URL to prevent duplicate updates
 					router.replace(`/dashboard?fortuneId=${fortuneId}`, {scroll: false});
