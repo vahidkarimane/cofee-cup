@@ -24,9 +24,8 @@ import {formatPrice} from '@/services/stripe';
 
 // Load Stripe outside of component render to avoid recreating Stripe object on every render
 const stripeConfig = getStripeConfig();
-// Create Stripe promise with explicit API version
+// Create Stripe promise
 const stripePromise = loadStripe(stripeConfig.publishableKey || '', {
-	apiVersion: '2025-04-30',
 	stripeAccount: undefined, // Only include if using Connect
 });
 
