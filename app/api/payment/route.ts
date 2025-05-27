@@ -1,7 +1,10 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {auth} from '@clerk/nextjs/server';
-import {createPaymentIntent, getFortuneReadingPrice} from '@/services/stripe';
-import {createPayment} from '@/lib/supabase/utils';
+import {
+	createCheckoutSession,
+	getFortuneReadingPrice,
+	retrieveCheckoutSession,
+} from '@/services/stripe';
 
 // Ensure route is not cached and every request hits the function
 export const dynamic = 'force-dynamic';
@@ -28,55 +31,36 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({error: 'Fortune ID is required'}, {status: 400});
 		}
 
-		// Get the price for a fortune reading
-		let amount;
-		try {
-			console.log('[Payment API] Step 4: Getting fortune reading price');
-			amount = await getFortuneReadingPrice();
-			console.log('[Payment API] Step 5: Fortune reading price retrieved:', amount);
-		} catch (priceError) {
-			console.error('[Payment API] Error getting fortune reading price:', priceError);
-			return NextResponse.json({error: 'Failed to get price'}, {status: 500});
-		}
+		// Get domain URL for return URL
+		const domainUrl = process.env.DOMAIN || `${req.nextUrl.protocol}//${req.headers.get('host')}`;
+		console.log('[Payment API] Step 4: Using domain URL:', domainUrl);
 
-		// Verify amount is not zero
-		if (!amount || amount <= 0) {
-			console.error('[Payment API] Error: Invalid price amount', amount);
-			return NextResponse.json({error: 'Invalid payment amount'}, {status: 400});
-		}
-		console.log('[Payment API] Step 5b: Verified amount is valid:', amount);
-
-		// Create a payment intent
-		let paymentIntent;
+		// Create a checkout session
+		let session;
 		try {
-			console.log('[Payment API] Step 6: Creating Stripe payment intent');
-			paymentIntent = await createPaymentIntent(amount, 'usd', {
-				userId,
-				fortuneId,
-			});
-			console.log('[Payment API] Step 7: Payment intent created:', paymentIntent.id);
+			console.log('[Payment API] Step 5: Creating Stripe checkout session');
+			session = await createCheckoutSession(fortuneId, userId, domainUrl);
+			console.log('[Payment API] Step 6: Checkout session created:', session.id);
 		} catch (stripeError) {
-			console.error('[Payment API] Stripe error creating payment intent:', stripeError);
-			return NextResponse.json({error: 'Failed to create Stripe payment intent'}, {status: 500});
+			console.error('[Payment API] Stripe error creating checkout session:', stripeError);
+			return NextResponse.json({error: 'Failed to create Stripe checkout session'}, {status: 500});
 		}
 
 		// Verify client secret exists
-		if (!paymentIntent.clientSecret) {
+		if (!session.clientSecret) {
 			console.error('[Payment API] Error: Missing client secret from Stripe');
-			return NextResponse.json({error: 'Failed to create payment'}, {status: 500});
+			return NextResponse.json({error: 'Failed to create checkout session'}, {status: 500});
 		}
 
-		// Store payment intent ID for later database record creation
-		// We'll create the actual database record after payment success via webhook
-		// This prevents duplicate records from being created on page refreshes
-		const paymentId = `pending_${paymentIntent.id}`;
-		console.log('[Payment API] Step 8: Using temporary payment ID:', paymentId);
+		// Return the client secret and session ID
+		console.log('[Payment API] Step 7: Returning client secret and session details to client');
 
-		// Return the client secret and payment ID
-		console.log('[Payment API] Step 9: Returning client secret and payment details to client');
+		// Get the amount for consistency with the previous implementation
+		const amount = await getFortuneReadingPrice();
+
 		return NextResponse.json({
-			clientSecret: paymentIntent.clientSecret,
-			paymentId,
+			clientSecret: session.clientSecret,
+			sessionId: session.id,
 			amount,
 		});
 	} catch (error) {
@@ -100,27 +84,32 @@ export async function GET(req: NextRequest) {
 		}
 
 		const searchParams = req.nextUrl.searchParams;
-		const paymentId = searchParams.get('paymentId');
+		const sessionId = searchParams.get('session_id');
 
-		// Get the price for a fortune reading
-		let amount;
-		try {
-			amount = await getFortuneReadingPrice();
-			console.log('Fortune reading price (GET):', amount);
-		} catch (priceError) {
-			console.error('Error getting fortune reading price:', priceError);
-			return NextResponse.json({error: 'Failed to get price'}, {status: 500});
+		if (sessionId) {
+			// If a session ID is provided, verify its status
+			try {
+				const session = await retrieveCheckoutSession(sessionId);
+				return NextResponse.json({status: session.status});
+			} catch (error) {
+				console.error('Error retrieving session:', error);
+				return NextResponse.json({error: 'Failed to retrieve session status'}, {status: 500});
+			}
+		} else {
+			// Otherwise, just return the price
+			try {
+				const amount = await getFortuneReadingPrice();
+				return NextResponse.json({amount});
+			} catch (error) {
+				console.error('Error getting fortune reading price:', error);
+				return NextResponse.json({error: 'Failed to get price'}, {status: 500});
+			}
 		}
-
-		// Return the price
-		return NextResponse.json({
-			amount,
-		});
 	} catch (error) {
-		console.error('Error getting price:', error);
+		console.error('Error in GET request:', error);
 		return NextResponse.json(
 			{
-				error: 'Failed to get fortune reading price',
+				error: 'Failed to process request',
 				details: error instanceof Error ? error.message : String(error),
 			},
 			{status: 500}

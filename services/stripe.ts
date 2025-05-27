@@ -1,14 +1,10 @@
 'use server';
 
-import Stripe from 'stripe';
 import {getStripeConfig} from '@/lib/env';
+import {stripe} from '@/lib/stripe';
 
-// Initialize Stripe with the secret key
+// Get stripe configuration for use in this service
 const stripeConfig = getStripeConfig();
-// Using the latest API version
-const stripe = new Stripe(stripeConfig.secretKey || '', {
-	apiVersion: '2025-04-30.basil' as any, // Latest API version to match frontend
-});
 
 /**
  * Create a payment intent for a fortune reading
@@ -105,4 +101,87 @@ export async function formatPrice(amount: number, currency: string = 'usd') {
 	});
 
 	return formatter.format(amount / 100);
+}
+
+/**
+ * Create a checkout session for a fortune reading
+ * @param fortuneId The ID of the fortune reading
+ * @param userId The ID of the user
+ * @param domainUrl The base URL for redirect URLs
+ * @returns The created checkout session with client secret
+ */
+export async function createCheckoutSession(fortuneId: string, userId: string, domainUrl: string) {
+	try {
+		// Get the price for a fortune reading
+		let amount = await getFortuneReadingPrice();
+
+		// Validate amount to prevent sending 0 to Stripe
+		if (!amount || amount <= 0) {
+			console.error(`[Stripe] Invalid payment amount: ${amount} cents`);
+			throw new Error('Payment amount must be greater than 0');
+		}
+
+		console.log(`[Stripe] Creating checkout session with amount: ${amount} cents (USD)`);
+
+		// Create a product price ID if one isn't available
+		let priceId = stripeConfig.priceId;
+
+		if (!priceId) {
+			// Create a temporary price if none is configured
+			const price = await stripe.prices.create({
+				unit_amount: amount,
+				currency: 'usd',
+				product_data: {
+					name: 'Fortune Reading',
+				},
+			});
+			priceId = price.id;
+		}
+
+		// Create a checkout session
+		const session = await stripe.checkout.sessions.create({
+			line_items: [
+				{
+					price: priceId,
+					quantity: 1,
+				},
+			],
+			mode: 'payment',
+			ui_mode: 'custom',
+			metadata: {
+				fortuneId,
+				userId,
+			},
+			return_url: `${domainUrl}/fortune-result?fortuneId=${fortuneId}&session_id={CHECKOUT_SESSION_ID}`,
+		});
+
+		if (!session.client_secret) {
+			console.error('[Stripe] Checkout session created but missing client secret');
+			throw new Error('Checkout session missing client secret');
+		}
+
+		console.log(`[Stripe] Successfully created checkout session: ${session.id}`);
+
+		return {
+			clientSecret: session.client_secret,
+			id: session.id,
+		};
+	} catch (error) {
+		console.error('Error creating checkout session:', error);
+		throw new Error(error instanceof Error ? error.message : 'Failed to create checkout session');
+	}
+}
+
+/**
+ * Retrieve a checkout session by ID
+ * @param sessionId The ID of the checkout session to retrieve
+ * @returns The checkout session
+ */
+export async function retrieveCheckoutSession(sessionId: string) {
+	try {
+		return await stripe.checkout.sessions.retrieve(sessionId);
+	} catch (error) {
+		console.error('Error retrieving checkout session:', error);
+		throw new Error('Failed to retrieve checkout session');
+	}
 }

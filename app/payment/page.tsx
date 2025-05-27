@@ -5,10 +5,13 @@ import {useSearchParams} from 'next/navigation';
 import {redirect} from 'next/navigation';
 import PaymentForm from '@/components/payment/PaymentForm';
 import {useAuth} from '@clerk/nextjs';
+import {useUser} from '@clerk/nextjs';
 
 function PaymentContent() {
 	const searchParams = useSearchParams();
-	const {userId} = useAuth();
+
+	const {isSignedIn, user, isLoaded} = useUser();
+
 	const fortuneId = searchParams.get('fortuneId');
 
 	// Redirect to fortune page if no fortuneId is provided
@@ -16,10 +19,10 @@ function PaymentContent() {
 		redirect('/fortune');
 	}
 
-	// Redirect to login if not authenticated
-	if (!userId) {
-		redirect('/auth/sign-in');
-	}
+	// // Redirect to login if not authenticated
+	// if (!user) {
+	// 	redirect('/auth/sign-in');
+	// }
 
 	return (
 		<div className="mt-10">

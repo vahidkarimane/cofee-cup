@@ -26,13 +26,38 @@ function FortuneResultContent() {
 	// 	redirect('/auth/sign-in');
 	// }
 
+	// Check if we're coming from a payment
+	const sessionId = searchParams.get('session_id');
+
 	useEffect(() => {
 		const fetchFortune = async () => {
 			try {
 				setLoading(true);
 				setError(null);
 
-				// First, check if the fortune exists and get its details
+				// If we have a session ID, verify the payment first
+				if (sessionId) {
+					const paymentResponse = await fetch(`/api/payment?session_id=${sessionId}`, {
+						method: 'GET',
+					});
+
+					if (!paymentResponse.ok) {
+						throw new Error('Failed to verify payment status');
+					}
+
+					const paymentData = await paymentResponse.json();
+
+					// If payment is not successful, redirect back to payment page
+					if (paymentData.status !== 'complete') {
+						console.log('Payment incomplete, redirecting to payment page');
+						redirect(`/payment?fortuneId=${fortuneId}`);
+						return;
+					}
+
+					console.log('Payment completed successfully');
+				}
+
+				// Now check the fortune exists and get its details
 				const response = await fetch(`/api/fortune/process?fortuneId=${fortuneId}`, {
 					method: 'GET',
 				});
